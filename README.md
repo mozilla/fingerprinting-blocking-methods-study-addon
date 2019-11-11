@@ -55,7 +55,7 @@ const { AddonStudies } = ChromeUtils.import(
 );
 await AddonStudies.add({
   recipeId: 1,
-  slug: "sarah_sandpit",
+  slug: "FPBlock",
   userFacingName: "FPBlock",
   userFacingDescription: "Study Addon for FPBlock experiment",
   branch: "control",
