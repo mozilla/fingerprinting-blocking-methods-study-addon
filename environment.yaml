@@ -1,0 +1,8 @@
+name: addondev
+channels:
+    - conda-forge
+    - birdsarah
+dependencies:
+    - nodejs
+    - yarn
+    - firefox-unbranded

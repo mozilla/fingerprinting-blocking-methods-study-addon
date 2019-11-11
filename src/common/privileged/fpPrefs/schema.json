@@ -1,0 +1,23 @@
+[
+  {
+    "namespace": "fpPrefs",
+    "description": "Interact with fingerprinting preferences",
+    "functions": [
+      {
+        "name": "isFpProtectionEnabled",
+        "type": "function",
+        "async": true,
+        "description": "get value of privacy.trackingprotection.fingerprinting.enabled",
+        "parameters": []
+      }
+    ],
+    "events": [
+      {
+        "name": "onFpPrefChanged",
+        "type": "function",
+        "description": "Fires when privacy.trackingprotection.fingerprinting.enabled is changed",
+        "parameters": []
+      }
+    ]
+  }
+]

@@ -1,0 +1,34 @@
+{
+  "manifest_version": 2,
+  "name": "${package.name}",
+  "description": "${package.description}",
+  "version": "${package.version}",
+
+  "applications": {
+    "gecko": {
+      "id": "${package.name}-${branch}@mozilla.org"
+    }
+  },
+
+  "experiment_apis": {
+    "fpPrefs": {
+      "schema": "./common/privileged/fpPrefs/schema.json",
+      "parent": {
+        "scopes": ["addon_parent"],
+        "script": "./common/privileged/fpPrefs/api.js",
+        "paths": [["fpPrefs"]]
+      }
+    }
+  },
+
+  "permissions": [
+    "normandyAddonStudy"
+  ],
+
+  "background": {
+    "scripts": [
+      "common/background.js"
+    ]
+  }
+
+}
