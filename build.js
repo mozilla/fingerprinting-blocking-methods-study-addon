@@ -38,7 +38,7 @@ async function copyAddonSrc({ branch }) {
   const version = packageJson.version;
   const targetDir = pathModule.join(
     DEST_BASE_DIR,
-    `extension-${branch}-${version}`,
+    `${packageJson.name.toLowerCase()}-${branch}-${version}`,
   );
   let templateData = {
     package: packageJson,
@@ -119,7 +119,7 @@ async function buildAddon({ branch }) {
   const version = packageJson.version;
   const addonDir = pathModule.join(
     DEST_BASE_DIR,
-    `extension-${branch}-${version}`,
+    `${packageJson.name.toLowerCase()}-${branch}-${version}`,
   );
   await webExt.cmd.build(
     {
@@ -131,11 +131,11 @@ async function buildAddon({ branch }) {
   );
   const oldFilePath = pathModule.join(
     "web-ext-artifacts",
-    `${packageJson.name}-${version}.zip`,
+    `${packageJson.name.toLowerCase()}-${version}.zip`,
   );
   const newFilePath = pathModule.join(
     "web-ext-artifacts",
-    `${packageJson.name}-${branch}@mozilla.org-${version}.xpi`,
+    `${packageJson.name.toLowerCase()}-${branch}@mozilla.org-${version}.xpi`,
   );
   await fsp.rename(oldFilePath, newFilePath);
   console.log(`Renamed ${oldFilePath} to ${newFilePath}`);
@@ -150,7 +150,7 @@ async function main() {
   await rimraf(DEST_BASE_DIR);
   await fsp.mkdir(DEST_BASE_DIR);
 
-  for (const branch of ["control", "treatment_function"]) {
+  for (const branch of ["control", "treatment_script"]) {
     await buildBranch({ branch });
   }
 }

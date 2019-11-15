@@ -10,18 +10,20 @@ Study Addon for experiment to test methods of fingerprinting blocking
 * User should not be allowed to enroll if they have flipped fp pref. Test with: `npx web-ext run -s dist/extension-control-0.1.0 -c web-ext-config-testFpOn.js`
 * User should be unenrolled if they flip fp pref. Start with `npx web-ext run -s dist/extension-control-0.1.0` user is enrolled in study. Manually flip pref either in preferences (Privacy and Security) or about:config. User should be unenrolled from study.
 
-### Treatment - Function
+### Treatment - Script
 
 * User should not already be enrolled in v2 fp study (is that something I need to write code for)?
 * User should not be allowed to enroll if they have flipped fp pref. Test with: `npx web-ext run -s dist/extension-treatment_function-0.1.0 -c web-ext-config-testFpOn.js` - I'm not sure about this - but this is safer option.
 * User should be unenrolled if they flip fp pref. Start with `npx web-ext run -s dist/extension-treatment_function-0.1.0` user is enrolled in study. Manually flip pref either in preferences (Privacy and Security) or about:config. User should be unenrolled from study. Should be unenrolled, as this will lead to domain level FP blocking kicking in and will pollute results.
-
+* Test updateAfter set short, and make sure everything still runs. User's could change clock and we want things to continue running. This will require installing, then keepign profile for at least the time chanage.
 
 ## Questions
 
 * Do we want to do anything with regards to skiplist pref?
-* Do we need to show an indication in privacy panel that they're being protected through this alternate mechanism?
+* Do we need to show an indication in privacy panel that they're being protected through this alternate mechanism? For now am planning console logging so devs can see what's happening.
 * hidden property in manifest (from federated learning)
+* Do we want to do domain blocking via ublock or pref flip?
+* Do we want to update / have ability to update list?
 
 ## Development
 

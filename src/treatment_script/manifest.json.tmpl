@@ -1,0 +1,61 @@
+{
+  "manifest_version": 2,
+  "name": "${package.name}",
+  "description": "${package.description}",
+  "version": "${package.version}",
+
+  "applications": {
+    "gecko": {
+      "id": "${package.name}-${branch}@mozilla.org"
+    }
+  },
+
+  "experiment_apis": {
+    "fpPrefs": {
+      "schema": "./common/privileged/fpPrefs/schema.json",
+      "parent": {
+        "scopes": ["addon_parent"],
+        "script": "./common/privileged/fpPrefs/api.js",
+        "paths": [["fpPrefs"]]
+      }
+    }
+  },
+
+  "permissions": [
+    "normandyAddonStudy",
+    "privacy",
+    "storage",
+    "tabs",
+    "unlimitedStorage",
+    "webNavigation",
+    "webRequest",
+    "webRequestBlocking",
+    "<all_urls>"
+  ],
+
+  "background": {
+    "scripts": [
+      "common/studyController.js",
+      "requestBlocking/console.js",
+      "requestBlocking/lib/lz4/lz4-block-codec-any.js",
+      "requestBlocking/lib/punycode.js",
+      "requestBlocking/lib/publicsuffixlist/publicsuffixlist.js",
+      "requestBlocking/webext.js",
+      "requestBlocking/vapi.js"
+    ]
+  },
+  "content_scripts": [
+    {
+      "all_frames": true,
+      "js": [
+        "requestBlocking/vapi.js"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "file://*/*"
+      ],
+      "run_at": "document_start"
+    }
+  ]
+}

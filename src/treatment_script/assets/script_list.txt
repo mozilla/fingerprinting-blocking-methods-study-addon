@@ -1,0 +1,10 @@
+
+! Title: Fingerprinting Script Filters
+! Description: Scripts to block
+! Expires: 100 days
+
+! Block all dummytracker
+||dummytracker.org^
+! Except fingeprinting
+@@||*fingerprinting*.dummytracker.org^
+||senglehardt.com/*/*.ico

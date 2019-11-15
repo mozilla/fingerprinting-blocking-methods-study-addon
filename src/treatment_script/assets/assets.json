@@ -1,0 +1,23 @@
+{
+	"assets.json": {
+		"content": "internal",
+		"updateAfter": 100,
+		"contentURL": [
+			"assets/assets.json"
+		]
+	},
+	"public_suffix_list.dat": {
+		"content": "internal",
+		"updateAfter": 100,
+		"contentURL": [
+			"assets/effective_tld_names.dat"
+		]
+	},
+	"script_list": {
+		"content": "filters",
+		"group": "default",
+		"title": "Fingerprinting Script Filters",
+		"updateAfter": 100,
+		"contentURL": "assets/script_list.txt"
+	}
+}
