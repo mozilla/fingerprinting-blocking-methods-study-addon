@@ -4,6 +4,7 @@
 ! Expires: 100 days
 
 ! Block all dummytracker
+
 ||dummytracker.org^
 ! Except fingeprinting
 @@||*fingerprinting*.dummytracker.org^
