@@ -366,31 +366,6 @@ const PageStore = class {
                  .mustLookup(this.tabId)
                  .getNetFilteringSwitch();
     }
-/*
-    getSpecificCosmeticFilteringSwitch() {
-        return this.noCosmeticFiltering !== true;
-    } */
-
-/*     toggleNetFilteringSwitch(url, scope, state) {
-        µb.toggleNetFilteringSwitch(url, scope, state);
-        this.netFilteringCache.empty();
-    } */
-
-/*     injectLargeMediaElementScriptlet() {
-        vAPI.tabs.executeScript(this.tabId, {
-            file: '/js/scriptlets/load-large-media-interactive.js',
-            allFrames: true,
-            runAt: 'document_idle',
-        });
-        //µb.contextMenu.update(this.tabId);
-    }
- */
-/*     temporarilyAllowLargeMediaElements(state) {
-        this.largeMediaCount = 0;
-        //µb.contextMenu.update(this.tabId);
-        this.allowLargeMediaElementsUntil = state ? Date.now() + 86400000 : 0;
-        µb.scriptlets.injectDeep(this.tabId, 'load-large-media-all');
-    } */
 
     // https://github.com/gorhill/uBlock/issues/2053
     //   There is no way around using journaling to ensure we deal properly with
@@ -483,105 +458,17 @@ const PageStore = class {
 
     filterRequest(fctxt) {
         fctxt.filter = undefined;
-
-        const requestType = fctxt.type;
-
-        // Static filtering has lowest precedence.
-        if ( result === 0 || result === 3 ) {
-            result = µb.staticNetFilteringEngine.matchString(fctxt);
-            if ( result !== 0 && µb.logger.enabled ) {
-                fctxt.filter = µb.staticNetFilteringEngine.toLogData();
-            }
+        // Static filtering
+        let result = µb.staticNetFilteringEngine.matchString(fctxt);
+        if (result === 1 ) {
+            // BIRD TODO: I would really like to make this more visible to user by putting it in web console.
+            console.log('FPScript Blocking Experiment. Blocking:', fctxt.url);
         }
-
-        if ( cacheableResult ) {
-            this.netFilteringCache.rememberResult(fctxt, result);
-        } else if (
-            result === 1 &&
-            this.collapsibleResources.has(requestType)
-        ) {
-            this.netFilteringCache.rememberBlock(fctxt, true);
-        }
-
         return result;
     }
 
-    /* filterCSPReport(fctxt) {
-        if (
-            µb.sessionSwitches.evaluateZ(
-                'no-csp-reports',
-                fctxt.getHostname()
-            )
-        ) {
-            if ( µb.logger.enabled ) {
-                fctxt.filter = µb.sessionSwitches.toLogData();
-            }
-            return 1;
-        }
-        return 0;
-    } */
-
-    filterFont(fctxt) {
-        if ( fctxt.type === 'font' ) {
-            this.remoteFontCount += 1;
-        }
-        /* if (
-            µb.sessionSwitches.evaluateZ(
-                'no-remote-fonts',
-                fctxt.getTabHostname()
-            ) !== false
-        ) {
-            if ( µb.logger.enabled ) {
-                fctxt.filter = µb.sessionSwitches.toLogData();
-            }
-            return 1;
-        } */
-        return 0;
-    }
-
-    filterScripting(fctxt, netFiltering) {
-        fctxt.filter = undefined;
-        if ( netFiltering === undefined ) {
-            netFiltering = this.getNetFilteringSwitch(fctxt);
-        }
-        return 1;
-    }
-
-    // The caller is responsible to check whether filtering is enabled or not.
-/*     filterLargeMediaElement(fctxt, size) {
-        fctxt.filter = undefined;
-
-        if ( Date.now() < this.allowLargeMediaElementsUntil ) {
-            return 0;
-        }
-        if (
-            µb.sessionSwitches.evaluateZ(
-                'no-large-media',
-                fctxt.getTabHostname()
-            ) !== true
-        ) {
-            return 0;
-        } 
-        if ( (size >>> 10) < µb.userSettings.largeMediaSize ) {
-            return 0;
-        }
-
-        this.largeMediaCount += 1;
-        if ( this.largeMediaTimer === null ) {
-            this.largeMediaTimer = vAPI.setTimeout(( ) => {
-                this.largeMediaTimer = null;
-                this.injectLargeMediaElementScriptlet();
-            }, 500);
-        }
-
-        if ( µb.logger.enabled ) {
-            fctxt.filter = µb.sessionSwitches.toLogData();
-        }
-
-        return 1;
-    } */
-
     getBlockedResources(request, response) {
+        console.log('in getBlockedResources');
         const normalURL = µb.normalizePageURL(this.tabId, request.frameURL);
         const resources = request.resources;
         const fctxt = µb.filteringContext;
@@ -605,17 +492,6 @@ const PageStore = class {
             this.netFilteringCache.lookupAllBlocked(fctxt.getDocHostname());
     }
 };
-
-PageStore.prototype.cacheableResults = new Set([
-    'sub_frame',
-]);
-
-PageStore.prototype.collapsibleResources = new Set([
-    'image',
-    'media',
-    'object',
-    'sub_frame',
-]);
 
 µb.PageStore = PageStore;
 
