@@ -22,8 +22,10 @@ Study Addon for experiment to test methods of fingerprinting blocking
 * Do we want to do anything with regards to skiplist pref?
 * Do we need to show an indication in privacy panel that they're being protected through this alternate mechanism? For now am planning console logging so devs can see what's happening.
 * hidden property in manifest (from federated learning)
-* Do we want to do domain blocking via ublock or pref flip?
+* Do we want to do domain blocking via requestBlocking or pref flip?
 * Do we want to update / have ability to update list?
+* Blocking reporting? (currently *browser* console logging - no user opt-out)
+* Behind-the-scenes requests
 
 ## Development
 

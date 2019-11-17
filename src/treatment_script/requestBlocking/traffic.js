@@ -86,6 +86,7 @@ const onBeforeRequest = function(details) {
         pageStore = µb.pageStoreFromTabId(tabId);
     }
 
+    console.log('This is where the magic happens');
     const result = pageStore.filterRequest(fctxt);
 
     pageStore.journalAddRequest(fctxt.getHostname(), result);

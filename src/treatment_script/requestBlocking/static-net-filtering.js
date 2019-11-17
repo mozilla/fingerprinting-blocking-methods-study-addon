@@ -2940,17 +2940,8 @@ FilterContainer.prototype.compile = function(raw, writer) {
 
     // Redirect rule
     if ( parsed.redirect !== 0 ) {
-        const result = this.compileRedirectRule(parsed, writer);
-        if ( result === false ) {
-            const who = writer.properties.get('assetKey') || '?';
-            µb.logger.writeOne({
-                realm: 'message',
-                type: 'error',
-                text: `Invalid redirect rule in ${who}: ${raw}`
-            });
-            return false;
-        }
-        if ( parsed.redirect === 2 ) { return true; }
+        console.error('static-net-filtering.js > unexpected redirect rule');
+        return false;
     }
 
     // Pure hostnames, use more efficient dictionary lookup
@@ -3078,19 +3069,6 @@ FilterContainer.prototype.compileToAtomicFilter = function(
         bitOffset += 1;
         typeBits >>>= 1;
     } while ( typeBits !== 0 );
-};
-
-/******************************************************************************/
-
-FilterContainer.prototype.compileRedirectRule = function(parsed, writer) {
-    const redirects = µb.redirectEngine.compileRuleFromStaticFilter(parsed.raw);
-    if ( Array.isArray(redirects) === false ) { return false; }
-    writer.select(parsed.badFilter ? 1 : 0);
-    const type = typeNameToTypeValue.redirect;
-    for ( const redirect of redirects ) {
-        writer.push([ type, redirect ]);
-    }
-    return true;
 };
 
 /******************************************************************************/

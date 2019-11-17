@@ -106,30 +106,6 @@ const onCommandShortcutsReady = function(commandShortcuts) {
 
 /******************************************************************************/
 
-// To bring older versions up to date
-
-const onVersionReady = function(lastVersion) {
-    if ( lastVersion === vAPI.app.version ) { return; }
-
-    // Since built-in resources may have changed since last version, we
-    // force a reload of all resources.
-    //µb.redirectEngine.invalidateResourcesSelfie();
-
-    const lastVersionInt = vAPI.app.intFromVersion(lastVersion);
-
-    // https://github.com/uBlockOrigin/uBlock-issues/issues/494
-    //   Remove useless per-site switches.
-    if ( lastVersionInt <= 1019003007 ) {
-        //µb.sessionSwitches.toggle('no-scripting', 'behind-the-scene', 0);
-        //µb.permanentSwitches.toggle('no-scripting', 'behind-the-scene', 0);
-        //µb.saveHostnameSwitches();
-    }
-
-    vAPI.storage.set({ version: vAPI.app.version });
-};
-
-/******************************************************************************/
-
 // https://github.com/chrisaljoudi/uBlock/issues/226
 // Whitelist in memory.
 // Whitelist parser needs PSL to be ready.
@@ -204,8 +180,6 @@ const onFirstFetchReady = function(fetched) {
     onUserSettingsReady(fetched);
     fromFetch(µb.restoreBackupSettings, fetched);
     onNetWhitelistReady(fetched.netWhitelist);
-    onVersionReady(fetched.version);
-    onCommandShortcutsReady(fetched.commandShortcuts);
 };
 
 /******************************************************************************/
@@ -318,22 +292,6 @@ try {
         ? µb.hiddenSettings.autoUpdateDelayAfterLaunch * 1000
         : 0
 );
-
-// Force an update of the context menu according to the currently
-// active tab.
-// µb.contextMenu.update();
-
-// https://github.com/uBlockOrigin/uBlock-issues/issues/717
-//   Prevent the extension from being restarted mid-session.
-browser.runtime.onUpdateAvailable.addListener(details => {
-    const toInt = vAPI.app.intFromVersion;
-    if (
-        µBlock.hiddenSettings.extensionUpdateForceReload === true ||
-        toInt(details.version) <= toInt(vAPI.app.version)
-    ) {
-        vAPI.app.restart();
-    }
-});
 
 log.info(`All ready ${Date.now()-vAPI.T0} ms after launch`);
 

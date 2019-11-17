@@ -199,10 +199,6 @@ const pageStoreJunkyardMax = 10;
 const PageStore = class {
     constructor(tabId, context) {
         this.extraData = new Map();
-        this.journal = [];
-        this.journalTimer = null;
-        this.journalLastCommitted = this.journalLastUncommitted = undefined;
-        this.journalLastUncommittedURL = undefined;
         this.netFilteringCache = NetFilteringResultCache.factory();
         this.init(tabId, context);
     }
@@ -224,16 +220,6 @@ const PageStore = class {
     init(tabId, context) {
         const tabContext = µb.tabContextManager.mustLookup(tabId);
         this.tabId = tabId;
-
-        // If we are navigating from-to same site, remember whether large
-        // media elements were temporarily allowed.
-        if (
-            typeof this.allowLargeMediaElementsUntil !== 'number' ||
-            tabContext.rootHostname !== this.tabHostname
-        ) {
-            this.allowLargeMediaElementsUntil = 0;
-        }
-
         this.tabHostname = tabContext.rootHostname;
         this.title = tabContext.rawURL;
         this.rawURL = tabContext.rawURL;
@@ -245,8 +231,6 @@ const PageStore = class {
         this.perLoadAllowedRequestCount = 0;
         this.remoteFontCount = 0;
         this.popupBlockedCount = 0;
-        this.largeMediaCount = 0;
-        this.largeMediaTimer = null;
         this.internalRedirectionCount = 0;
         this.extraData.clear();
 
@@ -262,26 +246,6 @@ const PageStore = class {
                 .setURL(tabContext.rawURL)
             : undefined;
 
-        // https://github.com/uBlockOrigin/uBlock-issues/issues/314
-        const masterSwitch = tabContext.getNetFilteringSwitch();
-
-        this.noCosmeticFiltering = true;
-        /* µb.sessionSwitches.evaluateZ(
-            'no-cosmetic-filtering',
-            tabContext.rootHostname
-        ) === true; */
-        /* if (
-            masterSwitch &&
-            this.noCosmeticFiltering &&
-            µb.logger.enabled &&
-            context === 'tabCommitted'
-        ) {
-            fctxt.setRealm('cosmetic')
-                 .setType('dom')
-                 .setFilter(µb.sessionSwitches.toLogData())
-                 .toLogger();
-        } */
-
         return this;
     }
 
@@ -293,7 +257,6 @@ const PageStore = class {
         if ( tabContext.rootHostname !== this.tabHostname ) {
             context = '';
         }
-
         // If URL changes without a page reload (more and more common), then
         // we need to keep all that we collected for reuse. In particular,
         // not doing so was causing a problem in `videos.foxnews.com`:
@@ -306,12 +269,6 @@ const PageStore = class {
             this.rawURL = tabContext.rawURL;
             return this;
         }
-
-        // A new page is completely reloaded from scratch, reset all.
-        if ( this.largeMediaTimer !== null ) {
-            clearTimeout(this.largeMediaTimer);
-            this.largeMediaTimer = null;
-        }
         this.disposeFrameStores();
         this.init(this.tabId, context);
         return this;
@@ -323,18 +280,7 @@ const PageStore = class {
         this.rawURL = '';
         this.hostnameToCountMap = null;
         this.netFilteringCache.empty();
-        this.allowLargeMediaElementsUntil = 0;
-        if ( this.largeMediaTimer !== null ) {
-            clearTimeout(this.largeMediaTimer);
-            this.largeMediaTimer = null;
-        }
         this.disposeFrameStores();
-        if ( this.journalTimer !== null ) {
-            clearTimeout(this.journalTimer);
-            this.journalTimer = null;
-        }
-        this.journal = [];
-        this.journalLastUncommittedURL = undefined;
         if ( pageStoreJunkyard.length < pageStoreJunkyardMax ) {
             pageStoreJunkyard.push(this);
         }
@@ -367,95 +313,6 @@ const PageStore = class {
                  .getNetFilteringSwitch();
     }
 
-    // https://github.com/gorhill/uBlock/issues/2053
-    //   There is no way around using journaling to ensure we deal properly with
-    //   potentially out of order navigation events vs. network request events.
-    journalAddRequest(hostname, result) {
-        if ( hostname === '' ) { return; }
-        this.journal.push(
-            hostname,
-            result === 1 ? 0x00000001 : 0x00010000
-        );
-        if ( this.journalTimer === null ) {
-            this.journalTimer = vAPI.setTimeout(
-                ( ) => { this.journalProcess(true); },
-                µb.hiddenSettings.requestJournalProcessPeriod
-            );
-        }
-    }
-
-    journalAddRootFrame(type, url) {
-        if ( type === 'committed' ) {
-            this.journalLastCommitted = this.journal.length;
-            if (
-                this.journalLastUncommitted !== undefined &&
-                this.journalLastUncommitted < this.journalLastCommitted &&
-                this.journalLastUncommittedURL === url
-            ) {
-                this.journalLastCommitted = this.journalLastUncommitted;
-                this.journalLastUncommitted = undefined;
-            }
-        } else if ( type === 'uncommitted' ) {
-            this.journalLastUncommitted = this.journal.length;
-            this.journalLastUncommittedURL = url;
-        }
-        if ( this.journalTimer !== null ) {
-            clearTimeout(this.journalTimer);
-        }
-        this.journalTimer = vAPI.setTimeout(
-            ( ) => { this.journalProcess(true); },
-            µb.hiddenSettings.requestJournalProcessPeriod
-        );
-    }
-
-    journalProcess(fromTimer) {
-        if ( !fromTimer ) {
-            clearTimeout(this.journalTimer);
-        }
-        this.journalTimer = null;
-
-        const journal = this.journal;
-        const now = Date.now();
-        let aggregateCounts = 0;
-        let pivot = this.journalLastCommitted || 0;
-
-        // Everything after pivot originates from current page.
-        for ( let i = pivot; i < journal.length; i += 2 ) {
-            const hostname = journal[i];
-            let hostnameCounts = this.hostnameToCountMap.get(hostname);
-            if ( hostnameCounts === undefined ) {
-                hostnameCounts = 0;
-                this.contentLastModified = now;
-            }
-            let count = journal[i+1];
-            this.hostnameToCountMap.set(hostname, hostnameCounts + count);
-            aggregateCounts += count;
-        }
-        this.perLoadBlockedRequestCount += aggregateCounts & 0xFFFF;
-        this.perLoadAllowedRequestCount += aggregateCounts >>> 16 & 0xFFFF;
-        this.journalLastCommitted = undefined;
-
-        // https://github.com/chrisaljoudi/uBlock/issues/905#issuecomment-76543649
-        //   No point updating the badge if it's not being displayed.
-        if ( (aggregateCounts & 0xFFFF) && µb.userSettings.showIconBadge ) {
-            µb.updateToolbarIcon(this.tabId, 0x02);
-        }
-
-        // Everything before pivot does not originate from current page -- we
-        // still need to bump global blocked/allowed counts.
-        for ( let i = 0; i < pivot; i += 2 ) {
-            aggregateCounts += journal[i+1];
-        }
-        if ( aggregateCounts !== 0 ) {
-            µb.localSettings.blockedRequestCount +=
-                aggregateCounts & 0xFFFF;
-            µb.localSettings.allowedRequestCount +=
-                aggregateCounts >>> 16 & 0xFFFF;
-            µb.localSettingsLastModified = now;
-        }
-        journal.length = 0;
-    }
-
     filterRequest(fctxt) {
         fctxt.filter = undefined;
         // Static filtering
@@ -465,31 +322,6 @@ const PageStore = class {
             console.log('FPScript Blocking Experiment. Blocking:', fctxt.url);
         }
         return result;
-    }
-
-    getBlockedResources(request, response) {
-        console.log('in getBlockedResources');
-        const normalURL = µb.normalizePageURL(this.tabId, request.frameURL);
-        const resources = request.resources;
-        const fctxt = µb.filteringContext;
-        fctxt.fromTabId(this.tabId)
-             .setDocOriginFromURL(normalURL);
-        // Force some resources to go through the filtering engine in order to
-        // populate the blocked-resources cache. This is required because for
-        // some resources it's not possible to detect whether they were blocked
-        // content script-side (i.e. `iframes` -- unlike `img`).
-        if ( Array.isArray(resources) && resources.length !== 0 ) {
-            for ( const resource of resources ) {
-                this.filterRequest(
-                    fctxt.setType(resource.type)
-                         .setURL(resource.url)
-                );
-            }
-        }
-        if ( this.netFilteringCache.hash === response.hash ) { return; }
-        response.hash = this.netFilteringCache.hash;
-        response.blockedResources =
-            this.netFilteringCache.lookupAllBlocked(fctxt.getDocHostname());
     }
 };
 
