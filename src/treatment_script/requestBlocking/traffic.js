@@ -418,88 +418,7 @@ const onBeforeMaybeSpuriousCSPReport = (function() {
 // - HTML filtering (requires ability to modify response body)
 // - CSP injection
 
-const onHeadersReceived = function(details) {
-    // https://github.com/uBlockOrigin/uBlock-issues/issues/610
-    //   Process behind-the-scene requests in a special way.
-    if (
-        details.tabId < 0 &&
-        normalizeBehindTheSceneResponseHeaders(details) === false
-    ) {
-        return;
-    }
-
-    const µb = µBlock;
-    const fctxt = µb.filteringContext.fromWebrequestDetails(details);
-    const requestType = fctxt.type;
-    const isRootDoc = requestType === 'main_frame';
-    const isDoc = isRootDoc || requestType === 'sub_frame';
-
-    let pageStore = µb.pageStoreFromTabId(fctxt.tabId);
-    if ( pageStore === null ) {
-        if ( isRootDoc === false ) { return; }
-        pageStore = µb.bindTabToPageStats(fctxt.tabId, 'beforeRequest');
-    }
-    if ( pageStore.getNetFilteringSwitch(fctxt) === false ) { return; }
-
-    // Keep in mind response headers will be modified in-place if needed, so
-    // `details.responseHeaders` will always point to the modified response
-    // headers.
-    const responseHeaders = details.responseHeaders;
-
-    if ( requestType === 'image' || requestType === 'media' ) {
-        return foilLargeMediaElement(
-            fctxt,
-            pageStore,
-            responseHeaders
-        );
-    }
-
-    if ( isDoc === false ) { return; }
-
-    // https://github.com/gorhill/uBlock/issues/2813
-    //   Disable the blocking of large media elements if the document is itself
-    //   a media element: the resource was not prevented from loading so no
-    //   point to further block large media elements for the current document.
-    if ( isRootDoc ) {
-        const contentType = headerValueFromName('content-type', responseHeaders);
-        if ( reMediaContentTypes.test(contentType) ) {
-            pageStore.allowLargeMediaElementsUntil = Date.now() + 86400000;
-            return;
-        }
-    }
-
-    // At this point we have a HTML document.
-
-    const filteredHTML = µb.canFilterResponseData &&
-                         filterDocument(pageStore, fctxt, details) === true;
-
-    let modifiedHeaders = injectCSP(fctxt, pageStore, responseHeaders) === true;
-
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=1376932
-    //   Prevent document from being cached by the browser if we modified it,
-    //   either through HTML filtering and/or modified response headers.
-    // https://github.com/uBlockOrigin/uBlock-issues/issues/229
-    //   Use `no-cache` instead of `no-cache, no-store, must-revalidate`, this
-    //   allows Firefox's offline mode to work as expected.
-    if ( (filteredHTML || modifiedHeaders) && dontCacheResponseHeaders ) {
-        let cacheControl = µb.hiddenSettings.cacheControlForFirefox1376932;
-        if ( cacheControl !== 'unset' ) {
-            let i = headerIndexFromName('cache-control', responseHeaders);
-            if ( i !== -1 ) {
-                responseHeaders[i].value = cacheControl;
-            } else {
-                responseHeaders.push({ name: 'Cache-Control', value: cacheControl });
-            }
-            modifiedHeaders = true;
-        }
-    }
-
-    if ( modifiedHeaders ) {
-        return { responseHeaders: responseHeaders };
-    }
-};
-
-const reMediaContentTypes = /^(?:audio|image|video)\//;
+/* completely removed onHeadersReceived */
 
 /******************************************************************************/
 
@@ -791,151 +710,14 @@ const filterDocument = (function() {
 
 /******************************************************************************/
 
-const injectCSP = function(fctxt, pageStore, responseHeaders) {
-    const µb = µBlock;
-    const loggerEnabled = µb.logger.enabled;
-    const cspSubsets = [];
-
-    // Start collecting policies >>>>>>>>
-
-    // ======== built-in policies
-
-    const builtinDirectives = [];
-
-    if ( pageStore.filterScripting(fctxt, true) === 1 ) {
-        builtinDirectives.push(µBlock.cspNoScripting);
-        if ( loggerEnabled ) {
-            fctxt.setRealm('network').setType('scripting').toLogger();
-        }
-    }
-    // https://github.com/uBlockOrigin/uBlock-issues/issues/422
-    //   We need to derive a special context for filtering `inline-script`,
-    //   as the embedding document for this "resource" will always be the
-    //   frame itself, not that of the parent of the frame.
-    else {
-        const fctxt2 = fctxt.duplicate();
-        fctxt2.type = 'inline-script';
-        fctxt2.setDocOriginFromURL(fctxt.url);
-        const result = pageStore.filterRequest(fctxt2);
-        if ( result === 1 ) {
-            builtinDirectives.push(µBlock.cspNoInlineScript);
-        }
-        if ( result === 2 && loggerEnabled ) {
-            fctxt2.setRealm('network').toLogger();
-        }
-    }
-
-    // https://github.com/gorhill/uBlock/issues/1539
-    // - Use a CSP to also forbid inline fonts if remote fonts are blocked.
-    fctxt.type = 'inline-font';
-    if ( pageStore.filterRequest(fctxt) === 1 ) {
-        builtinDirectives.push(µBlock.cspNoInlineFont);
-        if ( loggerEnabled ) {
-            fctxt.setRealm('network').toLogger();
-        }
-    }
-
-    if ( builtinDirectives.length !== 0 ) {
-        cspSubsets[0] = builtinDirectives.join(', ');
-    }
-
-    // ======== filter-based policies
-
-    // Static filtering.
-
-    const staticDirectives =
-        µb.staticNetFilteringEngine.matchAndFetchData(fctxt, 'csp');
-    for ( const directive of staticDirectives ) {
-        if ( directive.result !== 1 ) { continue; }
-        cspSubsets.push(directive.getData('csp'));
-    }
-
-    // URL filtering `allow` rules override static filtering.
-    /* if (
-        cspSubsets.length !== 0 &&
-        µb.sessionURLFiltering.evaluateZ(
-            fctxt.getTabHostname(),
-            fctxt.url,
-            'csp'
-        ) === 2
-    ) {
-        if ( loggerEnabled ) {
-            fctxt.setRealm('network')
-                 .setType('csp')
-                 .setFilter(µb.sessionURLFiltering.toLogData())
-                 .toLogger();
-        }
-        return;
-    } */
-
-    // Dynamic filtering `allow` rules override static filtering.
-    /* if (
-        cspSubsets.length !== 0 &&
-        µb.userSettings.advancedUserEnabled &&
-        µb.sessionFirewall.evaluateCellZY(
-            fctxt.getTabHostname(),
-            fctxt.getTabHostname(),
-            '*'
-        ) === 2
-    ) {
-        if ( loggerEnabled ) {
-            fctxt.setRealm('network')
-                 .setType('csp')
-                 .setFilter(µb.sessionFirewall.toLogData())
-                 .toLogger();
-        }
-        return;
-    } */
-
-    // <<<<<<<< All policies have been collected
-
-    // Static CSP policies will be applied.
-
-    if ( loggerEnabled && staticDirectives.length !== 0 ) {
-        fctxt.setRealm('network').setType('csp');
-        for ( const directive of staticDirectives ) {
-            fctxt.setFilter(directive.logData()).toLogger();
-        }
-    }
-
-    if ( cspSubsets.length === 0 ) { return; }
-
-    µb.updateToolbarIcon(fctxt.tabId, 0x02);
-
-    // Use comma to merge CSP directives.
-    // Ref.: https://www.w3.org/TR/CSP2/#implementation-considerations
-    //
-    // https://github.com/gorhill/uMatrix/issues/967
-    //   Inject a new CSP header rather than modify an existing one, except
-    //   if the current environment does not support merging headers:
-    //   Firefox 58/webext and less can't merge CSP headers, so we will merge
-    //   them here.
-
-    if ( cantMergeCSPHeaders ) {
-        const i = headerIndexFromName(
-            'content-security-policy',
-            responseHeaders
-        );
-        if ( i !== -1 ) {
-            cspSubsets.unshift(responseHeaders[i].value.trim());
-            responseHeaders.splice(i, 1);
-        }
-    }
-
-    responseHeaders.push({
-        name: 'Content-Security-Policy',
-        value: cspSubsets.join(', ')
-    });
-
-    return true;
-};
+/* COMPLETELY REMOVED injectCSP method */
 
 /******************************************************************************/
 
 // https://github.com/gorhill/uBlock/issues/1163
 //   "Block elements by size"
 
-const foilLargeMediaElement = function(fctxt, pageStore, responseHeaders) {
+/* const foilLargeMediaElement = function(fctxt, pageStore, responseHeaders) {
     let size = 0;
     if ( µBlock.userSettings.largeMediaSize !== 0 ) {
         const i = headerIndexFromName('content-length', responseHeaders);
@@ -951,7 +733,7 @@ const foilLargeMediaElement = function(fctxt, pageStore, responseHeaders) {
     }
 
     return { cancel: true };
-};
+}; */
 
 /******************************************************************************/
 
@@ -1041,35 +823,8 @@ return {
         ) {
             vAPI.net.suspend(true);
         }
-
         return function() {
             vAPI.net.setSuspendableListener(onBeforeRequest);
-            vAPI.net.addListener(
-                'onHeadersReceived',
-                onHeadersReceived,
-                {
-                    types: [
-                        'main_frame',
-                        'sub_frame',
-                        'image',
-                        'media',
-                        'xmlhttprequest',
-                    ],
-                    urls: [ 'http://*/*', 'https://*/*' ],
-                },
-                [ 'blocking', 'responseHeaders' ]
-            );
-            if ( vAPI.net.validTypes.has('csp_report') ) {
-                vAPI.net.addListener(
-                    'onBeforeRequest',
-                    onBeforeMaybeSpuriousCSPReport,
-                    {
-                        types: [ 'csp_report' ],
-                        urls: [ 'http://*/*', 'https://*/*' ]
-                    },
-                    [ 'blocking', 'requestBody' ]
-                );
-            }
             vAPI.net.unsuspend(true);
         };
     })(),

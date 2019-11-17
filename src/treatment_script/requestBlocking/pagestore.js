@@ -270,7 +270,7 @@ const PageStore = class {
             'no-cosmetic-filtering',
             tabContext.rootHostname
         ) === true; */
-        if (
+        /* if (
             masterSwitch &&
             this.noCosmeticFiltering &&
             µb.logger.enabled &&
@@ -280,7 +280,7 @@ const PageStore = class {
                  .setType('dom')
                  .setFilter(µb.sessionSwitches.toLogData())
                  .toLogger();
-        }
+        } */
 
         return this;
     }
@@ -360,23 +360,23 @@ const PageStore = class {
             this.frames.set(frameId, FrameStore.factory(frameURL));
         }
     }
-
+ 
     getNetFilteringSwitch() {
         return µb.tabContextManager
                  .mustLookup(this.tabId)
                  .getNetFilteringSwitch();
     }
-
+/*
     getSpecificCosmeticFilteringSwitch() {
         return this.noCosmeticFiltering !== true;
-    }
+    } */
 
-    toggleNetFilteringSwitch(url, scope, state) {
+/*     toggleNetFilteringSwitch(url, scope, state) {
         µb.toggleNetFilteringSwitch(url, scope, state);
         this.netFilteringCache.empty();
-    }
+    } */
 
-    injectLargeMediaElementScriptlet() {
+/*     injectLargeMediaElementScriptlet() {
         vAPI.tabs.executeScript(this.tabId, {
             file: '/js/scriptlets/load-large-media-interactive.js',
             allFrames: true,
@@ -384,13 +384,13 @@ const PageStore = class {
         });
         //µb.contextMenu.update(this.tabId);
     }
-
-    temporarilyAllowLargeMediaElements(state) {
+ */
+/*     temporarilyAllowLargeMediaElements(state) {
         this.largeMediaCount = 0;
         //µb.contextMenu.update(this.tabId);
         this.allowLargeMediaElementsUntil = state ? Date.now() + 86400000 : 0;
         µb.scriptlets.injectDeep(this.tabId, 'load-large-media-all');
-    }
+    } */
 
     // https://github.com/gorhill/uBlock/issues/2053
     //   There is no way around using journaling to ensure we deal properly with
@@ -484,63 +484,7 @@ const PageStore = class {
     filterRequest(fctxt) {
         fctxt.filter = undefined;
 
-        if ( this.getNetFilteringSwitch(fctxt) === false ) {
-            return 0;
-        }
-
         const requestType = fctxt.type;
-
-        if (
-            requestType === 'csp_report' &&
-            this.filterCSPReport(fctxt) === 1
-        ) {
-            return 1;
-        }
-
-        if ( requestType.endsWith('font') && this.filterFont(fctxt) === 1 ) {
-            return 1;
-        }
-
-        if (
-            requestType === 'script' &&
-            this.filterScripting(fctxt, true) === 1
-        ) {
-            return 1;
-        }
-
-        const cacheableResult = this.cacheableResults.has(requestType);
-
-        if ( cacheableResult ) {
-            const entry = this.netFilteringCache.lookupResult(fctxt);
-            if ( entry !== undefined ) {
-                fctxt.filter = entry.logData;
-                return entry.result;
-            }
-        }
-
-        // Dynamic URL filtering.
-        // Manually set - we're not doing dynamic filtering.
-        let result = 0;
-        /* let result = µb.sessionURLFiltering.evaluateZ(
-            fctxt.getTabHostname(),
-            fctxt.url,
-            requestType
-        );
-        if ( result !== 0 && µb.logger.enabled ) {
-            fctxt.filter = µb.sessionURLFiltering.toLogData();
-        } */
-
-        // Dynamic hostname/type filtering.
-        if ( result === 0 && µb.userSettings.advancedUserEnabled ) {
-            result = µb.sessionFirewall.evaluateCellZY(
-                fctxt.getTabHostname(),
-                fctxt.getHostname(),
-                requestType
-            );
-            if ( result !== 0 && result !== 3 && µb.logger.enabled ) {
-                fctxt.filter = µb.sessionFirewall.toLogData();
-            }
-        }
 
         // Static filtering has lowest precedence.
         if ( result === 0 || result === 3 ) {
@@ -562,7 +506,7 @@ const PageStore = class {
         return result;
     }
 
-    filterCSPReport(fctxt) {
+    /* filterCSPReport(fctxt) {
         if (
             µb.sessionSwitches.evaluateZ(
                 'no-csp-reports',
@@ -575,7 +519,7 @@ const PageStore = class {
             return 1;
         }
         return 0;
-    }
+    } */
 
     filterFont(fctxt) {
         if ( fctxt.type === 'font' ) {
@@ -604,20 +548,20 @@ const PageStore = class {
     }
 
     // The caller is responsible to check whether filtering is enabled or not.
-    filterLargeMediaElement(fctxt, size) {
+/*     filterLargeMediaElement(fctxt, size) {
         fctxt.filter = undefined;
 
         if ( Date.now() < this.allowLargeMediaElementsUntil ) {
             return 0;
         }
-        /* if (
+        if (
             µb.sessionSwitches.evaluateZ(
                 'no-large-media',
                 fctxt.getTabHostname()
             ) !== true
         ) {
             return 0;
-        } */
+        } 
         if ( (size >>> 10) < µb.userSettings.largeMediaSize ) {
             return 0;
         }
@@ -635,7 +579,7 @@ const PageStore = class {
         }
 
         return 1;
-    }
+    } */
 
     getBlockedResources(request, response) {
         const normalURL = µb.normalizePageURL(this.tabId, request.frameURL);

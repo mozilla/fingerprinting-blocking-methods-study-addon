@@ -53,8 +53,8 @@ const µBlock = (( ) => { // jshint ignore:line
         debugScriptletInjector: false,
         disableWebAssembly: false,
         extensionUpdateForceReload: false,
-        ignoreRedirectFilters: false,
-        ignoreScriptInjectFilters: false,
+        ignoreRedirectFilters: true,
+        ignoreScriptInjectFilters: true,
         filterAuthorMode: false,
         loggerPopupType: 'popup',
         manualUpdateAssetFetchPeriod: 500,
@@ -80,12 +80,12 @@ const µBlock = (( ) => { // jshint ignore:line
             externalLists: [],
             firewallPaneMinimized: true,
             hyperlinkAuditingDisabled: true,
-            ignoreGenericCosmeticFilters: vAPI.webextFlavor.soup.has('mobile'),
-            largeMediaSize: 50,
-            parseAllABPHideFilters: true,
+            //ignoreGenericCosmeticFilters: vAPI.webextFlavor.soup.has('mobile'),
+            //largeMediaSize: 50,
+            //parseAllABPHideFilters: true,
             prefetchingDisabled: true,
             requestLogMaxEntries: 1000,
-            showIconBadge: true,
+            showIconBadge: false,
             tooltipsDisabled: false,
             webrtcIPAddressHidden: false,
         },
@@ -117,7 +117,7 @@ const µBlock = (( ) => { // jshint ignore:line
         // Features detection.
         privacySettingsSupported: vAPI.browserSettings instanceof Object,
         cloudStorageSupported: false,
-        canFilterResponseData: typeof browser.webRequest.filterResponseData === 'function',
+        canFilterResponseData: false, //typeof browser.webRequest.filterResponseData === 'function',
         canInjectScriptletsNow: vAPI.webextFlavor.soup.has('chromium'),
 
         // https://github.com/chrisaljoudi/uBlock/issues/180
@@ -198,12 +198,6 @@ const µBlock = (( ) => { // jshint ignore:line
             target: '',
             zap: false,
         },
-
-        scriptlets: {},
-
-        cspNoInlineScript: "script-src 'unsafe-eval' * blob: data:",
-        cspNoScripting: 'script-src http: https:',
-        cspNoInlineFont: 'font-src *',
 
         liveBlockingProfiles: [],
         blockingProfileColorCache: new Map(),

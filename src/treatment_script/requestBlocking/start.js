@@ -52,7 +52,7 @@ vAPI.app.onShutdown = function() {
 // the extension was launched. It can be used to inject content scripts
 // in already opened web pages, to remove whatever nuisance could make it to
 // the web pages before uBlock was ready.
-/* 
+
 const initializeTabs = async function() {
     const manifest = browser.runtime.getManifest();
     if ( manifest instanceof Object === false ) { return; }
@@ -91,7 +91,7 @@ const initializeTabs = async function() {
             }
         }
     }
-}; */
+};
 
 /******************************************************************************/
 
@@ -308,7 +308,7 @@ try {
 µb.lz4Codec.relinquish();
 
 // Initialize internal state with maybe already existing tabs.
-// initializeTabs();
+initializeTabs();
 
 // https://github.com/chrisaljoudi/uBlock/issues/184
 //   Check for updates not too far in the future.

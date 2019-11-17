@@ -135,7 +135,7 @@
             // https://github.com/gorhill/uBlock/issues/3060
             // - The no-popups switch must apply only to popups, not to
             //   popunders.
-            if (
+            /* if (
                 popupType === 'popup' &&
                 µb.sessionSwitches.evaluateZ(
                     'no-popups',
@@ -148,12 +148,12 @@
                     source: 'switch'
                 };
                 return 1;
-            }
+            } */
 
             // https://github.com/gorhill/uBlock/issues/581
             //   Take into account popup-specific rules in dynamic URL
             //   filtering, OR generic allow rules.
-            result = µb.sessionURLFiltering.evaluateZ(
+            /* result = µb.sessionURLFiltering.evaluateZ(
                 fctxt.getTabHostname(),
                 targetURL,
                 popupType
@@ -164,13 +164,13 @@
             ) {
                 fctxt.filter = µb.sessionURLFiltering.toLogData();
                 return result;
-            }
+            } */
 
             // https://github.com/gorhill/uBlock/issues/581
             //   Take into account `allow` rules in dynamic filtering: `block`
             //   rules are ignored, as block rules are not meant to block
             //   specific types like `popup` (just like with static filters).
-            result = µb.sessionFirewall.evaluateCellZY(
+            /* result = µb.sessionFirewall.evaluateCellZY(
                 fctxt.getTabHostname(),
                 fctxt.getHostname(),
                 popupType
@@ -178,7 +178,7 @@
             if ( result === 2 ) {
                 fctxt.filter = µb.sessionFirewall.toLogData();
                 return 2;
-            }
+            } */
         }
 
         // https://github.com/chrisaljoudi/uBlock/issues/323

@@ -294,12 +294,13 @@ const matchBucket = function(url, hostname, bucket, start) {
 
     // Return all settings if none specified.
     if ( name === undefined ) {
+        // BIRD TODO - remove these to catch where they're being used?
         us = JSON.parse(JSON.stringify(us));
-        us.noCosmeticFiltering = this.sessionSwitches.evaluate('no-cosmetic-filtering', '*') === 1;
-        us.noLargeMedia = this.sessionSwitches.evaluate('no-large-media', '*') === 1;
-        us.noRemoteFonts = this.sessionSwitches.evaluate('no-remote-fonts', '*') === 1;
-        us.noScripting = this.sessionSwitches.evaluate('no-scripting', '*') === 1;
-        us.noCSPReports = this.sessionSwitches.evaluate('no-csp-reports', '*') === 1;
+        us.noCosmeticFiltering = true; // this.sessionSwitches.evaluate('no-cosmetic-filtering', '*') === 1;
+        us.noLargeMedia = false; //this.sessionSwitches.evaluate('no-large-media', '*') === 1;
+        us.noRemoteFonts = false; // this.sessionSwitches.evaluate('no-remote-fonts', '*') === 1;
+        us.noScripting = false; // this.sessionSwitches.evaluate('no-scripting', '*') === 1;
+        us.noCSPReports = true; // this.sessionSwitches.evaluate('no-csp-reports', '*') === 1;
         return us;
     }
 
