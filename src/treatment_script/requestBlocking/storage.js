@@ -258,7 +258,16 @@
     // https://github.com/gorhill/uBlock/issues/747
     //   Select default filter lists if first-time launch.
     const lists = await this.assets.metadata();
-    this.saveSelectedFilterLists(this.autoSelectRegionalFilterLists(lists));
+    const selectedListKeys = [ this.userFiltersPath ];
+    for ( const key in lists ) {
+        if ( lists.hasOwnProperty(key) === false ) { continue; }
+        const list = lists[key];
+        if ( list.off !== true ) {
+            selectedListKeys.push(key);
+            continue;
+        }
+    }
+    this.saveSelectedFilterLists(selectedListKeys);
 };
 
 µBlock.saveSelectedFilterLists = function(newKeys, append = false) {
@@ -451,8 +460,6 @@
     entry.entryUsedCount += deltaEntryUsedCount;
     vAPI.storage.set({ 'availableFilterLists': this.availableFilterLists });
     this.staticNetFilteringEngine.freeze();
-    this.redirectEngine.freeze();
-    this.staticExtFilteringEngine.freeze();
     this.selfieManager.destroy();
 
     // https://www.reddit.com/r/uBlockOrigin/comments/cj7g7m/
@@ -466,25 +473,6 @@
     this.appendUserFilters(details.filters, details);
     // https://github.com/gorhill/uBlock/issues/1786
     this.cosmeticFilteringEngine.removeFromSelectorCache(details.pageDomain);
-};
-
-/******************************************************************************/
-
-µBlock.autoSelectRegionalFilterLists = function(lists) {
-    const selectedListKeys = [ this.userFiltersPath ];
-    for ( const key in lists ) {
-        if ( lists.hasOwnProperty(key) === false ) { continue; }
-        const list = lists[key];
-        if ( list.off !== true ) {
-            selectedListKeys.push(key);
-            continue;
-        }
-        if ( this.listMatchesEnvironment(list) ) {
-            selectedListKeys.push(key);
-            list.off = false;
-        }
-    }
-    return selectedListKeys;
 };
 
 /******************************************************************************/
@@ -627,8 +615,6 @@
         log.info(`loadFilterLists() took ${Date.now()-t0} ms`);
 
         this.staticNetFilteringEngine.freeze();
-        //this.staticExtFilteringEngine.freeze();
-        //this.redirectEngine.freeze();
         vAPI.net.unsuspend();
 
         vAPI.storage.set({ 'availableFilterLists': this.availableFilterLists });
@@ -648,10 +634,9 @@
     };
 
     const applyCompiledFilters = function(assetKey, compiled) {
-        // We actually don't care about these counts.
+        // BIRD: TODO: We actually don't care about these counts.
 
         const snfe = this.staticNetFilteringEngine;
-        //const sxfe = this.staticExtFilteringEngine;
         let acceptedCount = snfe.acceptedCount,
             discardedCount = snfe.discardedCount;
         this.applyCompiledFilters(compiled, assetKey === this.userFiltersPath);
@@ -667,10 +652,9 @@
         this.availableFilterLists = lists;
 
         vAPI.net.suspend();
-        //this.redirectEngine.reset();
-        //this.staticExtFilteringEngine.reset();
         this.staticNetFilteringEngine.reset();
         this.selfieManager.destroy();
+        // BIRD TODO: Check this
         //this.staticFilteringReverseLookup.resetLists();
 
         // We need to build a complete list of assets to pull first: this is
@@ -702,8 +686,7 @@
             loadingPromise = Promise.all([
                 this.getAvailableLists().then(lists =>
                     onFilterListsReady.call(this, lists)
-                ),
-                this.loadRedirectResources(),
+                )
             ]).then(( ) => {
                 onDone.call(this);
             });
@@ -813,7 +796,6 @@
     //    https://adblockplus.org/en/filter-cheatsheet
     //    https://adblockplus.org/en/filters
     const staticNetFilteringEngine = this.staticNetFilteringEngine;
-    const staticExtFilteringEngine = this.staticExtFilteringEngine;
     const reIsWhitespaceChar = /\s/;
     const reMaybeLocalIp = /^[\d:f]/;
     const reIsLocalhostRedirect = /\s+(?:0\.0\.0\.0|broadcasthost|localhost|local|ip6-\w+)\b/;
@@ -830,14 +812,6 @@
         // Strip comments
         const c = line.charAt(0);
         if ( c === '!' || c === '[' ) { continue; }
-
-        // Parse or skip cosmetic filters
-        // All cosmetic filters are caught here
-        // if ( staticExtFilteringEngine.compile(line, writer) ) { continue; }
-
-        // Whatever else is next can be assumed to not be a cosmetic filter
-
-        // Most comments start in first column
         if ( c === '#' ) { continue; }
 
         // Catch comments somewhere on the line
@@ -881,10 +855,6 @@
     if ( rawText === '' ) { return; }
     let reader = new this.CompiledLineIO.Reader(rawText);
     this.staticNetFilteringEngine.fromCompiledContent(reader);
-    //this.staticExtFilteringEngine.fromCompiledContent(reader, {
-    //    skipGenericCosmetic: this.userSettings.ignoreGenericCosmeticFilters,
-    //    skipCosmetic: !firstparty && !this.userSettings.parseAllABPHideFilters
-    //});
 };
 
 /******************************************************************************/
@@ -955,49 +925,6 @@
 
 /******************************************************************************/
 
-µBlock.loadRedirectResources = async function() {
-    try {
-        const success = await this.redirectEngine.resourcesFromSelfie();
-        if ( success === true ) { return true; }
-
-        const fetchPromises = [
-            this.redirectEngine.loadBuiltinResources()
-        ];
-
-        const userResourcesLocation = this.hiddenSettings.userResourcesLocation;
-        if ( userResourcesLocation !== 'unset' ) {
-            for ( const url of userResourcesLocation.split(/\s+/) ) {
-                fetchPromises.push(this.assets.fetchText(url));
-            }
-        }
-
-        const results = await Promise.all(fetchPromises);
-        if ( Array.isArray(results) === false ) { return results; }
-
-        let content = '';
-        for ( let i = 1; i < results.length; i++ ) {
-            const result = results[i];
-            if (
-                result instanceof Object === false ||
-                typeof result.content !== 'string' ||
-                result.content === ''
-            ) {
-                continue;
-            }
-            content += '\n\n' + result.content;
-        }
-
-        this.redirectEngine.resourcesFromString(content);
-        this.redirectEngine.selfieFromResources();
-    } catch(ex) {
-        log.info(ex);
-        return false;
-    }
-    return true;
-};
-
-/******************************************************************************/
-
 µBlock.loadPublicSuffixList = async function() {
     if ( this.hiddenSettings.disableWebAssembly === false ) {
         publicSuffixList.enableWASM();
@@ -1051,10 +978,6 @@
                     availableFilterLists: µb.availableFilterLists,
                 })
             ),
-            // µb.redirectEngine.toSelfie('selfie/redirectEngine'),
-            //µb.staticExtFilteringEngine.toSelfie(
-            //    'selfie/staticExtFilteringEngine'
-            //),
             µb.staticNetFilteringEngine.toSelfie(
                 'selfie/staticNetFilteringEngine'
             ),
@@ -1094,17 +1017,10 @@
         try {
             const results = await Promise.all([
                 loadMain(),
-                µb.redirectEngine.fromSelfie('selfie/redirectEngine'),
-                µb.staticExtFilteringEngine.fromSelfie(
-                    'selfie/staticExtFilteringEngine'
-                ),
                 µb.staticNetFilteringEngine.fromSelfie(
                     'selfie/staticNetFilteringEngine'
                 ),
             ]);
-            if ( results.every(v => v) ) {
-                return µb.loadRedirectResources();
-            }
         }
         catch (reason) {
             log.info(reason);
@@ -1226,172 +1142,5 @@
 
     if ( typeof data.userFilters === 'string' ) {
         this.saveUserFilters(data.userFilters);
-    }
-};
-
-/******************************************************************************/
-
-// https://github.com/gorhill/uBlock/issues/2344
-//   Support mutliple locales per filter list.
-
-// https://github.com/gorhill/uBlock/issues/3210
-//   Support ability to auto-enable a filter list based on user agent.
-
-µBlock.listMatchesEnvironment = function(details) {
-    // Matches language?
-    if ( typeof details.lang === 'string' ) {
-        let re = this.listMatchesEnvironment.reLang;
-        if ( re === undefined ) {
-            const match = /^[a-z]+/.exec(self.navigator.language);
-            if ( match !== null ) {
-                re = new RegExp('\\b' + match[0] + '\\b');
-                this.listMatchesEnvironment.reLang = re;
-            }
-        }
-        if ( re !== undefined && re.test(details.lang) ) { return true; }
-    }
-    // Matches user agent?
-    if ( typeof details.ua === 'string' ) {
-        let re = new RegExp('\\b' + this.escapeRegex(details.ua) + '\\b', 'i');
-        if ( re.test(self.navigator.userAgent) ) { return true; }
-    }
-    return false;
-};
-
-/******************************************************************************/
-
-µBlock.scheduleAssetUpdater = (function() {
-    let timer, next = 0;
-
-    return function(updateDelay) {
-        if ( timer ) {
-            clearTimeout(timer);
-            timer = undefined;
-        }
-        if ( updateDelay === 0 ) {
-            next = 0;
-            return;
-        }
-        const now = Date.now();
-        // Use the new schedule if and only if it is earlier than the previous
-        // one.
-        if ( next !== 0 ) {
-            updateDelay = Math.min(updateDelay, Math.max(next - now, 0));
-        }
-        next = now + updateDelay;
-        timer = vAPI.setTimeout(( ) => {
-            timer = undefined;
-            next = 0;
-            this.assets.updateStart({
-                delay: this.hiddenSettings.autoUpdateAssetFetchPeriod * 1000 ||
-                       120000
-            });
-        }, updateDelay);
-    };
-})();
-
-/******************************************************************************/
-
-µBlock.assetObserver = function(topic, details) {
-    // Do not update filter list if not in use.
-    if ( topic === 'before-asset-updated' ) {
-        if ( details.type === 'filters' ) {
-            if (
-                this.availableFilterLists.hasOwnProperty(details.assetKey) === false ||
-                this.selectedFilterLists.indexOf(details.assetKey) === -1
-            ) {
-                return;
-            }
-        }
-        return true;
-    }
-
-    // Compile the list while we have the raw version in memory
-    if ( topic === 'after-asset-updated' ) {
-        // Skip selfie-related content.
-        if ( details.assetKey.startsWith('selfie/') ) { return; }
-        const cached = typeof details.content === 'string' &&
-                       details.content !== '';
-        if ( this.availableFilterLists.hasOwnProperty(details.assetKey) ) {
-            if ( cached ) {
-                if ( this.selectedFilterLists.indexOf(details.assetKey) !== -1 ) {
-                    this.extractFilterListMetadata(
-                        details.assetKey,
-                        details.content
-                    );
-                    this.assets.put(
-                        'compiled/' + details.assetKey,
-                        this.compileFilters(
-                            details.content,
-                            { assetKey: details.assetKey }
-                        )
-                    );
-                }
-            } else {
-                this.removeCompiledFilterList(details.assetKey);
-            }
-        } else if ( details.assetKey === this.pslAssetKey ) {
-            if ( cached ) {
-                this.compilePublicSuffixList(details.content);
-            }
-        }
-/*         vAPI.messaging.broadcast({
-            what: 'assetUpdated',
-            key: details.assetKey,
-            cached: cached
-        }); */
-        // https://github.com/gorhill/uBlock/issues/2585
-        //   Whenever an asset is overwritten, the current selfie is quite
-        //   likely no longer valid.
-        this.selfieManager.destroy();
-        return;
-    }
-
-    // Update failed.
-    if ( topic === 'asset-update-failed' ) {
-        vAPI.messaging.broadcast({
-            what: 'assetUpdated',
-            key: details.assetKey,
-            failed: true
-        });
-        return;
-    }
-
-    // Reload all filter lists if needed.
-    if ( topic === 'after-assets-updated' ) {
-        if ( details.assetKeys.length !== 0 ) {
-            // https://github.com/gorhill/uBlock/pull/2314#issuecomment-278716960
-            if (
-                this.hiddenSettings.userResourcesLocation !== 'unset' ||
-                vAPI.webextFlavor.soup.has('devbuild')
-            ) {
-                this.redirectEngine.invalidateResourcesSelfie();
-            }
-            this.loadFilterLists();
-        }
-        if ( this.userSettings.autoUpdate ) {
-            this.scheduleAssetUpdater(this.hiddenSettings.autoUpdatePeriod * 3600000 || 25200000);
-        } else {
-            this.scheduleAssetUpdater(0);
-        }
-        /* vAPI.messaging.broadcast({
-            what: 'assetsUpdated',
-            assetKeys: details.assetKeys
-        }); */
-        return;
-    }
-
-    // New asset source became available, if it's a filter list, should we
-    // auto-select it?
-    if ( topic === 'builtin-asset-source-added' ) {
-        if ( details.entry.content === 'filters' ) {
-            if (
-                details.entry.off !== true ||
-                this.listMatchesEnvironment(details.entry)
-            ) {
-                this.saveSelectedFilterLists([ details.assetKey ], true);
-            }
-        }
-        return;
     }
 };

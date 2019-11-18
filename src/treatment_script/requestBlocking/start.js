@@ -37,13 +37,6 @@ vAPI.app.onShutdown = function() {
     µb.staticFilteringReverseLookup.shutdown();
     µb.assets.updateStop();
     µb.staticNetFilteringEngine.reset();
-    //µb.staticExtFilteringEngine.reset();
-    //µb.sessionFirewall.reset();
-    //µb.permanentFirewall.reset();
-    //µb.sessionURLFiltering.reset();
-    //µb.permanentURLFiltering.reset();
-    //µb.sessionSwitches.reset();
-    //µb.permanentSwitches.reset();
 };
 
 /******************************************************************************/
@@ -282,16 +275,8 @@ try {
 µb.lz4Codec.relinquish();
 
 // Initialize internal state with maybe already existing tabs.
+// BIRD TODO
 // initializeTabs();
-
-// https://github.com/chrisaljoudi/uBlock/issues/184
-//   Check for updates not too far in the future.
-µb.assets.addObserver(µb.assetObserver.bind(µb));
-µb.scheduleAssetUpdater(
-    µb.userSettings.autoUpdate
-        ? µb.hiddenSettings.autoUpdateDelayAfterLaunch * 1000
-        : 0
-);
 
 log.info(`All ready ${Date.now()-vAPI.T0} ms after launch`);
 
