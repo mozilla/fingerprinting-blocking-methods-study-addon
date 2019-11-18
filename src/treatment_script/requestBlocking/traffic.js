@@ -88,10 +88,6 @@ const onBeforeRequest = function(details) {
     // console.log('This is where the magic happens');
     const result = pageStore.filterRequest(fctxt);
 
-    if ( µb.logger.enabled ) {
-        fctxt.setRealm('network').toLogger();
-    }
-
     // Not blocked
     if ( result !== 1 ) {
         if ( details.parentFrameId !== -1 && details.type === 'sub_frame' ) {
@@ -231,10 +227,6 @@ const onBeforeBehindTheSceneRequest = function(fctxt) {
         }
     }
 
-    if ( µb.logger.enabled ) {
-        fctxt.setRealm('network').toLogger();
-    }
-
     // Blocked?
     if ( result === 1 ) {
         return { cancel: true };
@@ -313,16 +305,6 @@ const onBeforeMaybeSpuriousCSPReport = (function() {
                 }
             }
         }
-
-        // At this point, we have a potentially spurious CSP report.
-
-        if ( µBlock.logger.enabled ) {
-            fctxt.setRealm('network')
-                 .setType('csp_report')
-                 .setFilter({ result: 1, source: 'global', raw: 'no-spurious-csp-report' })
-                 .toLogger();
-        }
-
         return { cancel: true };
     };
 })();
@@ -628,29 +610,6 @@ const filterDocument = (function() {
 /******************************************************************************/
 
 /* COMPLETELY REMOVED injectCSP method */
-
-/******************************************************************************/
-
-// https://github.com/gorhill/uBlock/issues/1163
-//   "Block elements by size"
-
-/* const foilLargeMediaElement = function(fctxt, pageStore, responseHeaders) {
-    let size = 0;
-    if ( µBlock.userSettings.largeMediaSize !== 0 ) {
-        const i = headerIndexFromName('content-length', responseHeaders);
-        if ( i === -1 ) { return; }
-        size = parseInt(responseHeaders[i].value, 10) || 0;
-    }
-
-    const result = pageStore.filterLargeMediaElement(fctxt, size);
-    if ( result === 0 ) { return; }
-
-    if ( µBlock.logger.enabled ) {
-        fctxt.setRealm('network').toLogger();
-    }
-
-    return { cancel: true };
-}; */
 
 /******************************************************************************/
 

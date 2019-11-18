@@ -384,36 +384,6 @@
 
 /******************************************************************************/
 
-µBlock.openNewTab = function(details) {
-    if ( details.url.startsWith('logger-ui.html') ) {
-        if ( details.shiftKey ) {
-            this.changeUserSettings(
-                'alwaysDetachLogger',
-                !this.userSettings.alwaysDetachLogger
-            );
-        }
-        if ( this.userSettings.alwaysDetachLogger ) {
-            details.popup = this.hiddenSettings.loggerPopupType;
-            const url = new URL(vAPI.getURL(details.url));
-            url.searchParams.set('popup', '1');
-            details.url = url.href;
-            let popupLoggerBox;
-            try {
-                popupLoggerBox = JSON.parse(
-                    vAPI.localStorage.getItem('popupLoggerBox')
-                );
-            } catch(ex) {
-            }
-            if ( popupLoggerBox !== undefined ) {
-                details.box = popupLoggerBox;
-            }
-        }
-    }
-    vAPI.tabs.open(details);
-};
-
-/******************************************************************************/
-
 µBlock.MRUCache = class {
     constructor(size) {
         this.size = size;

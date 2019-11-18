@@ -275,19 +275,6 @@
         this.filter = a;
         return this;
     },
-    toLogger: function() {
-        this.tstamp = Date.now();
-        if ( this.domain === undefined ) {
-            void this.getDomain();
-        }
-        if ( this.docDomain === undefined ) {
-            void this.getDocDomain();
-        }
-        if ( this.tabDomain === undefined ) {
-            void this.getTabDomain();
-        }
-        µBlock.logger.writeOne(this);
-    },
     originFromURI: µBlock.URI.originFromURI,
     hostnameFromURI: µBlock.URI.hostnameFromURI,
     domainFromHostname: µBlock.URI.domainFromHostname,

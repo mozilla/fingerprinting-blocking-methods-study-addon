@@ -2930,11 +2930,7 @@ FilterContainer.prototype.compile = function(raw, writer) {
     // Ignore filters with unsupported options
     if ( parsed.unsupported ) {
         const who = writer.properties.get('assetKey') || '?';
-        µb.logger.writeOne({
-            realm: 'message',
-            type: 'error',
-            text: `Invalid network filter in ${who}: ${raw}`
-        });
+        console.error(`Invalid network filter in ${who}: ${raw}`)
         return false;
     }
 

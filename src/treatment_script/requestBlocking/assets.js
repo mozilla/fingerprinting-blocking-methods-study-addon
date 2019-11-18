@@ -84,11 +84,7 @@ api.fetch = function(url, options = {}) {
     };
 
     const fail = function(details, msg) {
-        µBlock.logger.writeOne({
-            realm: 'message',
-            type: 'error',
-            text: msg,
-        });
+        console.warn('Assets fail:', msg);
         details.content = '';
         details.error = msg;
         reject(details);

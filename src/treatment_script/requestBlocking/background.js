@@ -44,7 +44,6 @@ const µBlock = (( ) => { // jshint ignore:line
         autoUpdateAssetFetchPeriod: 120,
         autoUpdateDelayAfterLaunch: 180,
         autoUpdatePeriod: 7,
-        blockingProfiles: '11111/#F00 11011/#C0F 11001/#00F 00001',
         cacheStorageAPI: 'unset',
         cacheStorageCompression: true,
         cacheControlForFirefox1376932: 'no-cache, no-store, must-revalidate',
@@ -56,7 +55,6 @@ const µBlock = (( ) => { // jshint ignore:line
         ignoreRedirectFilters: true,
         ignoreScriptInjectFilters: true,
         filterAuthorMode: false,
-        loggerPopupType: 'popup',
         manualUpdateAssetFetchPeriod: 500,
         popupFontSize: 'unset',
         selfieAfter: 3,
@@ -69,7 +67,6 @@ const µBlock = (( ) => { // jshint ignore:line
     return {
         userSettings: {
             advancedUserEnabled: false,
-            alwaysDetachLogger: true,
             autoUpdate: true,
             cloudStorageEnabled: false,
             collapseBlocked: true,
@@ -79,9 +76,6 @@ const µBlock = (( ) => { // jshint ignore:line
             externalLists: [],
             firewallPaneMinimized: true,
             hyperlinkAuditingDisabled: true,
-            //ignoreGenericCosmeticFilters: vAPI.webextFlavor.soup.has('mobile'),
-            //largeMediaSize: 50,
-            //parseAllABPHideFilters: true,
             prefetchingDisabled: true,
             requestLogMaxEntries: 1000,
             showIconBadge: false,
@@ -198,7 +192,6 @@ const µBlock = (( ) => { // jshint ignore:line
             zap: false,
         },
 
-        liveBlockingProfiles: [],
         blockingProfileColorCache: new Map(),
     };
 

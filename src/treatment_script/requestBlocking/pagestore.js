@@ -216,6 +216,7 @@ const PageStore = class {
     // https://github.com/gorhill/uBlock/issues/3201
     //   The context is used to determine whether we report behavior change
     //   to the logger.
+    //   BIRD: Not using logger, so not using context.
 
     init(tabId, context) {
         const tabContext = µb.tabContextManager.mustLookup(tabId);
@@ -226,26 +227,12 @@ const PageStore = class {
         this.hostnameToCountMap = new Map();
         this.contentLastModified = 0;
         this.frames = new Map();
-        this.logData = undefined;
         this.perLoadBlockedRequestCount = 0;
         this.perLoadAllowedRequestCount = 0;
         this.remoteFontCount = 0;
         this.popupBlockedCount = 0;
         this.internalRedirectionCount = 0;
         this.extraData.clear();
-
-        // The current filtering context is cloned because:
-        // - We may be called with or without the current context having been
-        //   initialized.
-        // - If it has been initialized, we do not want to change the state
-        //   of the current context.
-        const fctxt = µb.logger.enabled
-            ? µb.filteringContext
-                .duplicate()
-                .fromTabId(tabId)
-                .setURL(tabContext.rawURL)
-            : undefined;
-
         return this;
     }
 

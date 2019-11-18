@@ -335,24 +335,6 @@
             }
         }
 
-        // Log only for when there was a hit against an actual filter (allow or block).
-        // https://github.com/gorhill/uBlock/issues/2776
-        if ( µb.logger.enabled ) {
-            fctxt.setRealm('network').setType(popupType);
-            if ( popupType === 'popup' ) {
-                fctxt.setURL(targetURL)
-                     .setTabId(openerTabId)
-                     .setTabOriginFromURL(rootOpenerURL)
-                     .setDocOriginFromURL(localOpenerURL);
-            } else {
-                fctxt.setURL(rootOpenerURL)
-                     .setTabId(targetTabId)
-                     .setTabOriginFromURL(targetURL)
-                     .setDocOriginFromURL(targetURL);
-            }
-            fctxt.toLogger();
-        }
-
         // Not blocked
         if ( result !== 1 ) { return; }
 
