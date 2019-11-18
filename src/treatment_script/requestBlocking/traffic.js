@@ -62,8 +62,7 @@ const onBeforeRequest = function(details) {
 
     // Special handling for root document.
     // https://github.com/chrisaljoudi/uBlock/issues/1001
-    // This must be executed regardless of whether the request is
-    // behind-the-scene
+    // This must be executed regardless of whether the request is behind-the-scene
     if ( details.type === 'main_frame' ) {
         return onBeforeRootFrameRequest(fctxt);
     }
@@ -86,10 +85,8 @@ const onBeforeRequest = function(details) {
         pageStore = µb.pageStoreFromTabId(tabId);
     }
 
-    console.log('This is where the magic happens');
+    // console.log('This is where the magic happens');
     const result = pageStore.filterRequest(fctxt);
-
-    pageStore.journalAddRequest(fctxt.getHostname(), result);
 
     if ( µb.logger.enabled ) {
         fctxt.setRealm('network').toLogger();
@@ -103,23 +100,6 @@ const onBeforeRequest = function(details) {
         return;
     }
 
-    // Blocked
-
-    // https://github.com/gorhill/uBlock/issues/949
-    //   Redirect blocked request?
-/*     if ( µb.hiddenSettings.ignoreRedirectFilters !== true ) {
-        const url = µb.redirectEngine.toURL(fctxt);
-        if ( url !== undefined ) {
-            pageStore.internalRedirectionCount += 1;
-            if ( µb.logger.enabled ) {
-                fctxt.setRealm('redirect')
-                     .setFilter({ source: 'redirect', raw: µb.redirectEngine.resourceNameRegister })
-                     .toLogger();
-            }
-            return { redirectUrl: url };
-        }
-    }
- */
     return { cancel: true };
 };
 
@@ -134,35 +114,11 @@ const onBeforeRootFrameRequest = function(fctxt) {
     //   This must be executed regardless of whether the request is
     //   behind-the-scene
     const requestHostname = fctxt.getHostname();
-    const logEnabled = µb.logger.enabled;
-    let result = 0,
-        logData;
+    let result = 0;
 
     // If the site is whitelisted, disregard strict blocking
     if ( µb.getNetFilteringSwitch(requestURL) === false ) {
         result = 2;
-        if ( logEnabled ) {
-            logData = { engine: 'u', result: 2, raw: 'whitelisted' };
-        }
-    }
-
-    // Permanently unrestricted?
-    /* if (
-        result === 0 &&
-        µb.sessionSwitches.evaluateZ('no-strict-blocking', requestHostname)
-    ) {
-        result = 2;
-        if ( logEnabled ) {
-            logData = { engine: 'u', result: 2, raw: 'no-strict-blocking: ' + µb.sessionSwitches.z + ' true' };
-        }
-    } */
-
-    // Temporarily whitelisted?
-    if ( result === 0 && strictBlockBypasser.isBypassed(requestHostname) ) {
-        result = 2;
-        if ( logEnabled ) {
-            logData = { engine: 'u', result: 2, raw: 'no-strict-blocking: true (temporary)' };
-        }
     }
 
     // Static filtering: We always need the long-form result here.
@@ -172,18 +128,12 @@ const onBeforeRootFrameRequest = function(fctxt) {
     if ( result === 0 ) {
         fctxt.type = 'main_frame';
         result = snfe.matchString(fctxt, 0b0001);
-        if ( result !== 0 || logEnabled ) {
-            logData = snfe.toLogData();
-        }
     }
 
     // Check for generic block
     if ( result === 0 ) {
         fctxt.type = 'no_type';
         result = snfe.matchString(fctxt, 0b0001);
-        if ( result !== 0 || logEnabled ) {
-            logData = snfe.toLogData();
-        }
         // https://github.com/chrisaljoudi/uBlock/issues/1128
         // Do not block if the match begins after the hostname, except when
         // the filter is specifically of type `other`.
@@ -194,43 +144,9 @@ const onBeforeRootFrameRequest = function(fctxt) {
             toBlockDocResult(requestURL, requestHostname, logData) === false
         ) {
             result = 0;
-            logData = undefined;
-        }
+         }
     }
 
-    // Log
-    fctxt.type = 'main_frame';
-    const pageStore = µb.bindTabToPageStats(fctxt.tabId, 'beforeRequest');
-    if ( pageStore ) {
-        pageStore.journalAddRootFrame('uncommitted', requestURL);
-        pageStore.journalAddRequest(requestHostname, result);
-    }
-
-    if ( logEnabled ) {
-        fctxt.setRealm('network').setFilter(logData).toLogger();
-    }
-
-    // Not blocked
-    if ( result !== 1 ) { return; }
-
-    // No log data means no strict blocking (because we need to report why
-    // the blocking occurs.
-    if ( logData === undefined  ) { return; }
-
-    // Blocked
-    const query = encodeURIComponent(JSON.stringify({
-        url: requestURL,
-        hn: requestHostname,
-        dn: fctxt.getDomain() || requestHostname,
-        fs: logData.raw
-    }));
-
-    vAPI.tabs.replace(
-        fctxt.tabId,
-        vAPI.getURL('document-blocked.html?details=') + query
-    );
-
-    return { cancel: true };
 };
 
 /******************************************************************************/

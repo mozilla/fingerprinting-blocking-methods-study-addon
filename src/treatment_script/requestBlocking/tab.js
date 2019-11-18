@@ -356,19 +356,6 @@
         // Not blocked
         if ( result !== 1 ) { return; }
 
-        // Only if a popup was blocked do we report it in the dynamic
-        // filtering pane.
-        const pageStore = µb.pageStoreFromTabId(openerTabId);
-        if ( pageStore ) {
-            pageStore.journalAddRequest(fctxt.getHostname(), result);
-            pageStore.popupBlockedCount += 1;
-        }
-
-        // Blocked
-        if ( µb.userSettings.showIconBadge ) {
-            µb.updateToolbarIcon(openerTabId, 0b010);
-        }
-
         // It is a popup, block and remove the tab.
         if ( popupType === 'popup' ) {
             µb.unbindTabFromPageStats(targetTabId);
@@ -834,17 +821,12 @@ housekeep itself.
 vAPI.Tabs = class extends vAPI.Tabs {
     onActivated(details) {
         super.onActivated(details);
-        if ( vAPI.isBehindTheSceneTabId(details.tabId) ) { return; }
-        // https://github.com/uBlockOrigin/uBlock-issues/issues/680
-        //µBlock.updateToolbarIcon(details.tabId);
-        //µBlock.contextMenu.update(details.tabId);
     }
 
     onClosed(tabId) {
         super.onClosed(tabId);
         if ( vAPI.isBehindTheSceneTabId(tabId) ) { return; }
         µBlock.unbindTabFromPageStats(tabId);
-        //µBlock.contextMenu.update();
     }
 
     onCreated(details) {
@@ -867,16 +849,6 @@ vAPI.Tabs = class extends vAPI.Tabs {
         const µb = µBlock;
         if ( details.frameId === 0 ) {
             µb.tabContextManager.commit(details.tabId, details.url);
-            let pageStore = µb.bindTabToPageStats(details.tabId, 'tabCommitted');
-            if ( pageStore ) {
-                pageStore.journalAddRootFrame('committed', details.url);
-            }
-        }
-        if ( µb.canInjectScriptletsNow ) {
-            let pageStore = µb.pageStoreFromTabId(details.tabId);
-            if ( pageStore !== null && pageStore.getNetFilteringSwitch() ) {
-                µb.scriptletFilteringEngine.injectNow(details);
-            }
         }
     }
 
@@ -901,7 +873,6 @@ vAPI.tabs = new vAPI.Tabs();
 // Create an entry for the tab if it doesn't exist.
 
 µBlock.bindTabToPageStats = function(tabId, context) {
-    this.updateToolbarIcon(tabId, 0b111);
 
     // Do not create a page store for URLs which are of no interests
     if ( this.tabContextManager.exists(tabId) === false ) {
@@ -914,7 +885,6 @@ vAPI.tabs = new vAPI.Tabs();
 
     // Tab is not bound
     if ( pageStore === undefined ) {
-        this.updateTitle(tabId);
         pageStore = this.PageStore.factory(tabId, context);
         this.pageStores.set(tabId, pageStore);
         this.pageStoresToken = Date.now();
@@ -938,10 +908,7 @@ vAPI.tabs = new vAPI.Tabs();
     // as maybe the tab was force-reloaded, in which case the page stats must
     // be all reset.
     pageStore.reuse(context);
-
-    this.updateTitle(tabId);
     this.pageStoresToken = Date.now();
-
     return pageStore;
 };
 
@@ -990,145 +957,6 @@ vAPI.tabs = new vAPI.Tabs();
     µBlock.pageStores.set(pageStore.tabId, pageStore);
     pageStore.title = 'logBehindTheScene';
 }
-
-/******************************************************************************/
-
-// Update visual of extension icon.
-
-µBlock.updateToolbarIcon = (( ) => {
-    const µb = µBlock;
-    const tabIdToDetails = new Map();
-
-    const computeBadgeColor = (bits) => {
-        let color = µb.blockingProfileColorCache.get(bits);
-        if ( color !== undefined ) { return color; }
-        let max = 0;
-        for ( const profile of µb.liveBlockingProfiles ) {
-            const v = bits & (profile.bits & ~1);
-            if ( v < max ) { break; }
-            color = profile.color;
-            max = v;
-        }
-        if ( color === undefined ) {
-            color = '#666';
-        }
-        µb.blockingProfileColorCache.set(bits, color);
-        return color;
-    };
-
-    const updateBadge = (tabId) => {
-        let parts = tabIdToDetails.get(tabId);
-        tabIdToDetails.delete(tabId);
-
-        let state = 0;
-        let badge = '';
-        let color = '#666';
-
-        let pageStore = µb.pageStoreFromTabId(tabId);
-        if ( pageStore !== null ) {
-            state = pageStore.getNetFilteringSwitch() ? 1 : 0;
-            if ( state === 1 ) {
-                if ( (parts & 0b0010) !== 0 && pageStore.perLoadBlockedRequestCount ) {
-                    badge = µb.formatCount(
-                        pageStore.perLoadBlockedRequestCount
-                    );
-                }
-                if ( (parts & 0b0100) !== 0 ) {
-                    color = computeBadgeColor(
-                        µb.blockingModeFromHostname(pageStore.tabHostname)
-                    );
-                }
-            }
-        }
-
-        // https://www.reddit.com/r/uBlockOrigin/comments/d33d37/
-        if ( µb.userSettings.showIconBadge === false ) {
-            parts |= 0b1000;
-        }
-
-        //vAPI.setIcon(tabId, { parts, state, badge, color });
-    };
-
-    // parts: bit 0 = icon
-    //        bit 1 = badge text
-    //        bit 2 = badge color
-    //        bit 3 = hide badge
-
-    return function(tabId, newParts = 0b0111) {
-        if ( typeof tabId !== 'number' ) { return; }
-        if ( vAPI.isBehindTheSceneTabId(tabId) ) { return; }
-        let currentParts = tabIdToDetails.get(tabId);
-        if ( currentParts === newParts ) { return; }
-        if ( currentParts === undefined ) {
-            self.requestIdleCallback(
-                ( ) => updateBadge(tabId),
-                { timeout: 701 }
-            );
-        } else {
-            newParts |= currentParts;
-        }
-        tabIdToDetails.set(tabId, newParts);
-    };
-})();
-
-/******************************************************************************/
-
-µBlock.updateTitle = (( ) => {
-    const tabIdToTimer = new Map();
-    const delay = 499;
-
-    const tryAgain = function(entry) {
-        if ( entry.count === 1 ) { return false; }
-        entry.count -= 1;
-        tabIdToTimer.set(
-            entry.tabId,
-            vAPI.setTimeout(( ) => { updateTitle(entry); }, delay)
-        );
-        return true;
-    };
-
-    const onTabReady = function(entry, tab) {
-        if ( !tab ) { return; }
-        const µb = µBlock;
-        const pageStore = µb.pageStoreFromTabId(entry.tabId);
-        if ( pageStore === null ) { return; }
-        // Firefox needs this: if you detach a tab, the new tab won't have
-        // its rawURL set. Concretely, this causes the logger to report an
-        // entry to itself in the logger's tab selector.
-        // TODO: Investigate for a fix vAPI-side.
-        pageStore.rawURL = tab.url;
-        µb.pageStoresToken = Date.now();
-        if ( !tab.title && tryAgain(entry) ) { return; }
-        // https://github.com/gorhill/uMatrix/issues/225
-        // Sometimes title changes while page is loading.
-        const settled = tab.title && tab.title === pageStore.title;
-        pageStore.title = tab.title || tab.url || '';
-        if ( !settled ) {
-            tryAgain(entry);
-        }
-    };
-
-    const updateTitle = async function(entry) {
-        tabIdToTimer.delete(entry.tabId);
-        const tab = await vAPI.tabs.get(entry.tabId);
-        onTabReady(entry, tab);
-    };
-
-    return function(tabId) {
-        if ( vAPI.isBehindTheSceneTabId(tabId) ) { return; }
-        const timer = tabIdToTimer.get(tabId);
-        if ( timer !== undefined ) {
-            clearTimeout(timer);
-        }
-        tabIdToTimer.set(
-            tabId,
-            vAPI.setTimeout(
-                updateTitle.bind(null, { tabId: tabId, count: 5 }),
-                delay
-            )
-        );
-    };
-})();
 
 /******************************************************************************/
 
