@@ -18,16 +18,6 @@ Study Addon for experiment to test methods of fingerprinting blocking
 * Test updateAfter set short, and make sure everything still runs. User's could change clock and we want things to continue running. This will require installing, then keepign profile for at least the time chanage.
 * Test that after removing the study addon all cache, storage, etc is cleaned up.
 
-## Questions
-
-* Do we want to do anything with regards to skiplist pref?
-* Do we need to show an indication in privacy panel that they're being protected through this alternate mechanism? For now am planning console logging so devs can see what's happening.
-* hidden property in manifest (from federated learning)
-* Do we want to do domain blocking via requestBlocking or pref flip?
-* Do we want to update / have ability to update list?
-* Blocking reporting? (currently *browser* console logging - no user opt-out)
-* Behind-the-scenes requests
-
 ## Development
 
 ```bash
@@ -39,7 +29,7 @@ Install and run one of the built variants:
 
 ```bash
 npx web-ext run -s dist/extension-control-0.1.0
-npx web-ext run -s dist/extension-treatment_function-0.1.0
+npx web-ext run -s dist/extension-treatment_script-0.1.0
 ```
 
 For the add-on to work, it must be used in a version of Firefox with the
