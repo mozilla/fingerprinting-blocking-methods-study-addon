@@ -29,32 +29,6 @@
 
 /******************************************************************************/
 
-// Platform-specific behavior.
-
-// https://github.com/uBlockOrigin/uBlock-issues/issues/42
-// https://bugzilla.mozilla.org/show_bug.cgi?id=1376932
-//   Add proper version number detection once issue is fixed in Firefox.
-let dontCacheResponseHeaders =
-    vAPI.webextFlavor.soup.has('firefox');
-
-// https://github.com/gorhill/uMatrix/issues/967#issuecomment-373002011
-//   This can be removed once Firefox 60 ESR is released.
-let cantMergeCSPHeaders =
-    vAPI.webextFlavor.soup.has('firefox') && vAPI.webextFlavor.major < 59;
-
-
-// The real actual webextFlavor value may not be set in stone, so listen
-// for possible future changes.
-window.addEventListener('webextFlavor', function() {
-    dontCacheResponseHeaders =
-        vAPI.webextFlavor.soup.has('firefox');
-    cantMergeCSPHeaders =
-        vAPI.webextFlavor.soup.has('firefox') &&
-        vAPI.webextFlavor.major < 59;
-}, { once: true });
-
-/******************************************************************************/
-
 // Intercept and filter web requests.
 
 const onBeforeRequest = function(details) {
@@ -235,80 +209,6 @@ const onBeforeBehindTheSceneRequest = function(fctxt) {
 
 /******************************************************************************/
 
-// Caller must ensure headerName is normalized to lower case.
-
-const headerIndexFromName = function(headerName, headers) {
-    let i = headers.length;
-    while ( i-- ) {
-        if ( headers[i].name.toLowerCase() === headerName ) {
-            return i;
-        }
-    }
-    return -1;
-};
-
-const headerValueFromName = function(headerName, headers) {
-    const i = headerIndexFromName(headerName, headers);
-    return i !== -1 ? headers[i].value : '';
-};
-
-/******************************************************************************/
-
-const strictBlockBypasser = {
-    hostnameToDeadlineMap: new Map(),
-    cleanupTimer: undefined,
-
-    cleanup: function() {
-        for ( const [ hostname, deadline ] of this.hostnameToDeadlineMap ) {
-            if ( deadline <= Date.now() ) {
-                this.hostnameToDeadlineMap.delete(hostname);
-            }
-        }
-    },
-
-    bypass: function(hostname) {
-        if ( typeof hostname !== 'string' || hostname === '' ) { return; }
-        this.hostnameToDeadlineMap.set(
-            hostname,
-            Date.now() + µBlock.hiddenSettings.strictBlockingBypassDuration * 1000
-        );
-    },
-
-    isBypassed: function(hostname) {
-        if ( this.hostnameToDeadlineMap.size === 0 ) { return false; }
-        let bypassDuration =
-            µBlock.hiddenSettings.strictBlockingBypassDuration * 1000;
-        if ( this.cleanupTimer === undefined ) {
-            this.cleanupTimer = vAPI.setTimeout(
-                ( ) => {
-                    this.cleanupTimer = undefined;
-                    this.cleanup();
-                },
-                bypassDuration + 10000
-            );
-        }
-        for (;;) {
-            const deadline = this.hostnameToDeadlineMap.get(hostname);
-            if ( deadline !== undefined ) {
-                if ( deadline > Date.now() ) {
-                    this.hostnameToDeadlineMap.set(
-                        hostname,
-                        Date.now() + bypassDuration
-                    );
-                    return true;
-                }
-                this.hostnameToDeadlineMap.delete(hostname);
-            }
-            const pos = hostname.indexOf('.');
-            if ( pos === -1 ) { break; }
-            hostname = hostname.slice(pos + 1);
-        }
-        return false;
-    }
-};
-
-/******************************************************************************/
-
 return {
     start: (( ) => {
         vAPI.net = new vAPI.Net();
@@ -325,11 +225,7 @@ return {
             vAPI.net.setSuspendableListener(onBeforeRequest);
             vAPI.net.unsuspend(true);
         };
-    })(),
-
-    strictBlockBypass: function(hostname) {
-        strictBlockBypasser.bypass(hostname);
-    }
+    })()
 };
 
 /******************************************************************************/
