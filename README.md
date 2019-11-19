@@ -16,6 +16,7 @@ Study Addon for experiment to test methods of fingerprinting blocking
 * User should not be allowed to enroll if they have flipped fp pref. Test with: `npx web-ext run -s dist/extension-treatment_function-0.1.0 -c web-ext-config-testFpOn.js` - I'm not sure about this - but this is safer option.
 * User should be unenrolled if they flip fp pref. Start with `npx web-ext run -s dist/extension-treatment_function-0.1.0` user is enrolled in study. Manually flip pref either in preferences (Privacy and Security) or about:config. User should be unenrolled from study. Should be unenrolled, as this will lead to domain level FP blocking kicking in and will pollute results.
 * Test updateAfter set short, and make sure everything still runs. User's could change clock and we want things to continue running. This will require installing, then keepign profile for at least the time chanage.
+* Test that after removing the study addon all cache, storage, etc is cleaned up.
 
 ## Questions
 

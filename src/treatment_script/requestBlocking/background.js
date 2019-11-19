@@ -18,7 +18,6 @@
 
     Home: https://github.com/gorhill/uBlock
 
-    TODO: Bird consider whittling this down
 */
 
 

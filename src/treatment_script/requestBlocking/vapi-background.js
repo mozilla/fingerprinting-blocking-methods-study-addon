@@ -89,11 +89,7 @@ vAPI.app = {
             vint = vint * 1000 + pint;
         }
         return vint;
-    },
-
-    restart: function() {
-        browser.runtime.reload();
-    },
+    }
 };
 
 /******************************************************************************/
@@ -339,14 +335,6 @@ vAPI.Tabs = class {
         return tabs.length !== 0 ? tabs[0] : null;
     }
 
-    async insertCSS() {
-        try {
-            await webext.tabs.insertCSS(...arguments);
-        }
-        catch(reason) {
-        }
-    }
-
     async query(queryInfo) {
         let tabs;
         try {
@@ -355,108 +343,6 @@ vAPI.Tabs = class {
         catch(reason) {
         }
         return Array.isArray(tabs) ? tabs : [];
-    }
-
-    async removeCSS() {
-        try {
-            await webext.tabs.removeCSS(...arguments);
-        }
-        catch(reason) {
-        }
-    }
-
-    // Properties of the details object:
-    // - url: 'URL',    => the address that will be opened
-    // - index: -1,     => undefined: end of the list, -1: following tab,
-    //                     or after index
-    // - active: false, => opens the tab... in background: true,
-    //                     foreground: undefined
-    // - popup: 'popup' => open in a new window
-
-    async create(url, details) {
-        if ( details.active === undefined ) {
-            details.active = true;
-        }
-
-        const subWrapper = async ( ) => {
-            const updateDetails = {
-                url: url,
-                active: !!details.active
-            };
-
-            // Opening a tab from incognito window won't focus the window
-            // in which the tab was opened
-            const focusWindow = tab => {
-                if ( tab.active && vAPI.windows instanceof Object ) {
-                    vAPI.windows.update(tab.windowId, { focused: true });
-                }
-            };
-
-            if ( !details.tabId ) {
-                if ( details.index !== undefined ) {
-                    updateDetails.index = details.index;
-                }
-                browser.tabs.create(updateDetails, focusWindow);
-                return;
-            }
-
-            // update doesn't accept index, must use move
-            const tab = await vAPI.tabs.update(
-                toTabId(details.tabId),
-                updateDetails
-            );
-            // if the tab doesn't exist
-            if ( tab === null ) {
-                browser.tabs.create(updateDetails, focusWindow);
-            } else if ( details.index !== undefined ) {
-                browser.tabs.move(tab.id, { index: details.index });
-            }
-        };
-
-        // Open in a standalone window
-        //
-        // https://github.com/uBlockOrigin/uBlock-issues/issues/168#issuecomment-413038191
-        //   Not all platforms support vAPI.windows.
-        //
-        // For some reasons, some platforms do not honor the left,top
-        // position when specified. I found that further calling
-        // windows.update again with the same position _may_ help.
-        if ( details.popup !== undefined && vAPI.windows instanceof Object ) {
-            const createDetails = {
-                url: details.url,
-                type: details.popup,
-            };
-            if ( details.box instanceof Object ) {
-                Object.assign(createDetails, details.box);
-            }
-            const win = await vAPI.windows.create(createDetails);
-            if ( win === null ) { return; }
-            if ( details.box instanceof Object === false ) { return; }
-            if (
-                win.left === details.box.left &&
-                win.top === details.box.top
-            ) {
-                return;
-            }
-            vAPI.windows.update(win.id, {
-                left: details.box.left,
-                top: details.box.top
-            });
-            return;
-        }
-
-        if ( details.index !== -1 ) {
-            subWrapper();
-            return;
-        }
-
-        const tab = await vAPI.tabs.getCurrent();
-        if ( tab !== null ) {
-            details.index = tab.index + 1;
-        } else {
-            details.index = undefined;
-        }
-        subWrapper();
     }
 
     // Properties of the details object:
@@ -644,52 +530,6 @@ if ( webext.windows instanceof Object ) {
 }
 
 /******************************************************************************/
-/******************************************************************************/
-
-if ( webext.browserAction instanceof Object ) {
-    vAPI.browserAction = {
-        setTitle: async function() {
-            try {
-                await webext.browserAction.setTitle(...arguments);
-            }
-            catch (reason) {
-            }
-        },
-    };
-    // Not supported on Firefox for Android
-    if ( webext.browserAction.setIcon ) {
-        vAPI.browserAction.setBadgeTextColor = async function() {
-            try {
-                await webext.browserAction.setBadgeTextColor(...arguments);
-            }
-            catch (reason) {
-            }
-        };
-        vAPI.browserAction.setBadgeBackgroundColor = async function() {
-            try {
-                await webext.browserAction.setBadgeBackgroundColor(...arguments);
-            }
-            catch (reason) {
-            }
-        };
-        vAPI.browserAction.setBadgeText = async function() {
-            try {
-                await webext.browserAction.setBadgeText(...arguments);
-            }
-            catch (reason) {
-            }
-        };
-        vAPI.browserAction.setIcon = async function() {
-            try {
-                await webext.browserAction.setIcon(...arguments);
-            }
-            catch (reason) {
-            }
-        };
-    }
-}
-
-/******************************************************************************/
 
 vAPI.Net = class {
     constructor() {
@@ -794,44 +634,6 @@ vAPI.Net = class {
     }
 };
 
-/******************************************************************************/
-/******************************************************************************/
-
-// https://github.com/gorhill/uBlock/issues/531
-//   Storage area dedicated to admin settings. Read-only.
-
-// https://github.com/gorhill/uBlock/commit/43a5ed735b95a575a9339b6e71a1fcb27a99663b#commitcomment-13965030
-// Not all Chromium-based browsers support managed storage. Merely testing or
-// exception handling in this case does NOT work: I don't know why. The
-// extension on Opera ends up in a non-sensical state, whereas vAPI become
-// undefined out of nowhere. So only solution left is to test explicitly for
-// Opera.
-// https://github.com/gorhill/uBlock/issues/900
-// Also, UC Browser: http://www.upsieutoc.com/image/WXuH
-
-vAPI.adminStorage = (( ) => {
-    if ( webext.storage.managed instanceof Object === false ) {
-        return {
-            getItem: function() {
-                return Promise.resolve();
-            },
-        };
-    }
-    return {
-        getItem: async function(key) {
-            let bin;
-            try {
-                bin = await webext.storage.managed.get(key);
-            } catch(ex) {
-            }
-            if ( bin instanceof Object ) {
-                return bin[key];
-            }
-        }
-    };
-})();
-
-/******************************************************************************/
 /******************************************************************************/
 
 // <<<<< end of local scope
