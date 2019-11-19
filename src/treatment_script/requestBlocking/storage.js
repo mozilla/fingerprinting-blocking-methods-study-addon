@@ -619,13 +619,6 @@
 
         vAPI.storage.set({ 'availableFilterLists': this.availableFilterLists });
 
-/*         vAPI.messaging.broadcast({
-            what: 'staticFilteringDataChanged',
-            parseCosmeticFilters: false,
-            ignoreGenericCosmeticFilters: true,
-            listKeys: loadedListKeys
-        }); */
-
         this.selfieManager.destroy();
         this.lz4Codec.relinquish();
         this.compiledFormatChanged = false;
@@ -654,8 +647,6 @@
         vAPI.net.suspend();
         this.staticNetFilteringEngine.reset();
         this.selfieManager.destroy();
-        // BIRD TODO: Check this
-        //this.staticFilteringReverseLookup.resetLists();
 
         // We need to build a complete list of assets to pull first: this is
         // because it *may* happens that some load operations are synchronous:
@@ -1058,89 +1049,3 @@
     return { load, destroy: destroyAsync };
 })();
 
-/******************************************************************************/
-
-// https://github.com/gorhill/uBlock/issues/531
-// Overwrite user settings with admin settings if present.
-//
-// Admin settings match layout of a uBlock backup. Not all data is
-// necessarily present, i.e. administrators may removed entries which
-// values are left to the user's choice.
-
-µBlock.restoreAdminSettings = async function() {
-    let data;
-    try {
-        const json = await vAPI.adminStorage.getItem('adminSettings');
-        if ( typeof json === 'string' && json !== '' ) {
-            data = JSON.parse(json);
-        }
-    } catch (ex) {
-        console.error(ex);
-    }
-
-    if ( data instanceof Object === false ) { return; }
-
-    const bin = {};
-    let binNotEmpty = false;
-
-    // https://github.com/uBlockOrigin/uBlock-issues/issues/666
-    //   Allows an admin to set their own 'assets.json' file, with their
-    //   own set of stock assets.
-    if (
-        typeof data.assetsBootstrapLocation === 'string' &&
-        data.assetsBootstrapLocation !== ''
-    ) {
-        µBlock.assetsBootstrapLocation = data.assetsBootstrapLocation;
-    }
-
-    if ( typeof data.userSettings === 'object' ) {
-        for ( const name in this.userSettings ) {
-            if ( this.userSettings.hasOwnProperty(name) === false ) {
-                continue;
-            }
-            if ( data.userSettings.hasOwnProperty(name) === false ) {
-                continue;
-            }
-            bin[name] = data.userSettings[name];
-            binNotEmpty = true;
-        }
-    }
-
-    // 'selectedFilterLists' is an array of filter list tokens. Each token
-    // is a reference to an asset in 'assets.json'.
-    if ( Array.isArray(data.selectedFilterLists) ) {
-        bin.selectedFilterLists = data.selectedFilterLists;
-        binNotEmpty = true;
-    }
-
-    if ( Array.isArray(data.whitelist) ) {
-        bin.netWhitelist = data.whitelist;
-        binNotEmpty = true;
-    } else if ( typeof data.netWhitelist === 'string' ) {
-        bin.netWhitelist = data.netWhitelist.split('\n');
-        binNotEmpty = true;
-    }
-
-    if ( typeof data.dynamicFilteringString === 'string' ) {
-        bin.dynamicFilteringString = data.dynamicFilteringString;
-        binNotEmpty = true;
-    }
-
-    if ( typeof data.urlFilteringString === 'string' ) {
-        bin.urlFilteringString = data.urlFilteringString;
-        binNotEmpty = true;
-    }
-
-    if ( typeof data.hostnameSwitchesString === 'string' ) {
-        bin.hostnameSwitchesString = data.hostnameSwitchesString;
-        binNotEmpty = true;
-    }
-
-    if ( binNotEmpty ) {
-        vAPI.storage.set(bin);
-    }
-
-    if ( typeof data.userFilters === 'string' ) {
-        this.saveUserFilters(data.userFilters);
-    }
-};

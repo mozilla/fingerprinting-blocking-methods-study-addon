@@ -34,67 +34,8 @@ const µb = µBlock;
 
 vAPI.app.onShutdown = function() {
     const µb = µBlock;
-    µb.staticFilteringReverseLookup.shutdown();
     µb.assets.updateStop();
     µb.staticNetFilteringEngine.reset();
-};
-
-/******************************************************************************/
-
-// This is called only once, when everything has been loaded in memory after
-// the extension was launched. It can be used to inject content scripts
-// in already opened web pages, to remove whatever nuisance could make it to
-// the web pages before uBlock was ready.
-/* 
-const initializeTabs = async function() {
-    const manifest = browser.runtime.getManifest();
-    if ( manifest instanceof Object === false ) { return; }
-
-    const tabs = await vAPI.tabs.query({ url: '<all_urls>' });
-    const toCheck = [];
-    const checker = {
-        file: 'js/scriptlets/should-inject-contentscript.js'
-    };
-    for ( const tab of tabs  ) {
-        µb.tabContextManager.commit(tab.id, tab.url);
-        µb.bindTabToPageStats(tab.id);
-        // https://github.com/chrisaljoudi/uBlock/issues/129
-        //   Find out whether content scripts need to be injected
-        //   programmatically. This may be necessary for web pages which
-        //   were loaded before uBO launched.
-        toCheck.push(
-            /^https?:\/\//.test(tab.url)
-                ? vAPI.tabs.executeScript(tab.id, checker)
-                : false
-        );
-    }
-    const results = await Promise.all(toCheck);
-    for ( let i = 0; i < results.length; i++ ) {
-        const result = results[i];
-        if ( result.length === 0 || result[0] !== true ) { continue; }
-        // Inject dclarative content scripts programmatically.
-        const tabId = tabs[i].id;
-        for ( const contentScript of manifest.content_scripts ) {
-            for ( const file of contentScript.js ) {
-                vAPI.tabs.executeScript(tabId, {
-                    file: file,
-                    allFrames: contentScript.all_frames,
-                    runAt: contentScript.run_at
-                });
-            }
-        }
-    }
-}; */
-
-/******************************************************************************/
-
-const onCommandShortcutsReady = function(commandShortcuts) {
-    if ( Array.isArray(commandShortcuts) === false ) { return; }
-    µb.commandShortcuts = new Map(commandShortcuts);
-    if ( µb.canUpdateShortcuts === false ) { return; }
-    for ( const entry of commandShortcuts ) {
-        vAPI.commands.update({ name: entry[0], shortcut: entry[1] });
-    }
 };
 
 /******************************************************************************/
@@ -128,13 +69,6 @@ const onUserSettingsReady = function(fetched) {
             'webrtcIPAddress': !userSettings.webrtcIPAddressHidden
         });
     }
-
-    //µb.permanentFirewall.fromString(fetched.dynamicFilteringString);
-    //µb.sessionFirewall.assign(µb.permanentFirewall);
-    //µb.permanentURLFiltering.fromString(fetched.urlFilteringString);
-    //µb.sessionURLFiltering.assign(µb.permanentURLFiltering);
-    //µb.permanentSwitches.fromString(fetched.hostnameSwitchesString);
-    //µb.sessionSwitches.assign(µb.permanentSwitches);
 };
 
 /******************************************************************************/
@@ -226,10 +160,6 @@ const createDefaultProps = function() {
 /******************************************************************************/
 
 try {
-    // https://github.com/gorhill/uBlock/issues/531
-    await µb.restoreAdminSettings();
-    log.info(`Admin settings ready ${Date.now()-vAPI.T0} ms after launch`);
-
     await µb.loadHiddenSettings();
     log.info(`Hidden settings ready ${Date.now()-vAPI.T0} ms after launch`);
 
@@ -273,10 +203,6 @@ try {
 // garbage collection of these resources kicks in. Relinquishing as soon
 // as possible ensure minimal memory usage baseline.
 µb.lz4Codec.relinquish();
-
-// Initialize internal state with maybe already existing tabs.
-// BIRD TODO
-// initializeTabs();
 
 log.info(`All ready ${Date.now()-vAPI.T0} ms after launch`);
 
