@@ -34,7 +34,6 @@ const µb = µBlock;
 
 vAPI.app.onShutdown = function() {
     const µb = µBlock;
-    µb.assets.updateStop();
     µb.staticNetFilteringEngine.reset();
 };
 

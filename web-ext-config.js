@@ -3,7 +3,7 @@
 const defaultConfig = {
   run: {
     firefox: process.env.FIREFOX_BINARY || "firefox",
-    browserConsole: true,
+    browserConsole: false,
     startUrl: [
       "about:debugging", 
       "about:preferences#privacy"

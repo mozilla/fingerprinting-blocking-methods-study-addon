@@ -306,16 +306,6 @@ vAPI.Tabs = class {
         });
      }
 
-    async executeScript() {
-        let result;
-        try {
-            result = await webext.tabs.executeScript(...arguments);
-        }
-        catch(reason) {
-        }
-        return Array.isArray(result) ? result : [];
-    }
-
     async get(tabId) {
         if ( tabId === null ) {
             return this.getCurrent();
@@ -345,92 +335,6 @@ vAPI.Tabs = class {
         return Array.isArray(tabs) ? tabs : [];
     }
 
-    // Properties of the details object:
-    // - url: 'URL',    => the address that will be opened
-    // - tabId: 1,      => the tab is used if set, instead of creating a new one
-    // - index: -1,     => undefined: end of the list, -1: following tab, or
-    //                     after index
-    // - active: false, => opens the tab in background - true and undefined:
-    //                     foreground
-    // - select: true,  => if a tab is already opened with that url, then select
-    //                     it instead of opening a new one
-    // - popup: true    => open in a new window
-
-    async open(details) {
-        let targetURL = details.url;
-        if ( typeof targetURL !== 'string' || targetURL === '' ) {
-            return null;
-        }
-
-        // extension pages
-        if ( /^[\w-]{2,}:/.test(targetURL) !== true ) {
-            targetURL = vAPI.getURL(targetURL);
-        }
-
-        if ( !details.select ) {
-            this.create(targetURL, details);
-            return;
-        }
-
-        // https://github.com/gorhill/uBlock/issues/3053#issuecomment-332276818
-        //   Do not try to lookup uBO's own pages with FF 55 or less.
-        if (
-            vAPI.webextFlavor.soup.has('firefox') &&
-            vAPI.webextFlavor.major < 56
-        ) {
-            this.create(targetURL, details);
-            return;
-        }
-
-        // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/query#Parameters
-        //   "Note that fragment identifiers are not matched."
-        //   Fragment identifiers ARE matched -- we need to remove the fragment.
-        const pos = targetURL.indexOf('#');
-        const targetURLWithoutHash = pos === -1
-            ? targetURL
-            : targetURL.slice(0, pos);
-
-        const tabs = await vAPI.tabs.query({ url: targetURLWithoutHash });
-        if ( tabs.length === 0 ) {
-            this.create(targetURL, details);
-            return;
-        }
-        let tab = tabs[0];
-        const updateDetails = { active: true };
-        // https://github.com/uBlockOrigin/uBlock-issues/issues/592
-        if ( tab.url.startsWith(targetURL) === false ) {
-            updateDetails.url = targetURL;
-        }
-        tab = await vAPI.tabs.update(tab.id, updateDetails);
-        if ( vAPI.windows instanceof Object === false ) { return; }
-        vAPI.windows.update(tab.windowId, { focused: true });
-    }
-
-    async update() {
-        let tab;
-        try {
-            tab = await webext.tabs.update(...arguments);
-        }
-        catch (reason) {
-        }
-        return tab instanceof Object ? tab : null;
-    }
-
-    // Replace the URL of a tab. Noop if the tab does not exist.
-    replace(tabId, url) {
-        tabId = toTabId(tabId);
-        if ( tabId === 0 ) { return; }
-
-        let targetURL = url;
-
-        // extension pages
-        if ( /^[\w-]{2,}:/.test(targetURL) !== true ) {
-            targetURL = vAPI.getURL(targetURL);
-        }
-
-        vAPI.tabs.update(tabId, { url: targetURL });
-    }
-
     async remove(tabId) {
         tabId = toTabId(tabId);
         if ( tabId === 0 ) { return; }
@@ -452,15 +356,6 @@ vAPI.Tabs = class {
         }
         catch (reason) {
         }
-    }
-
-    async select(tabId) {
-        tabId = toTabId(tabId);
-        if ( tabId === 0 ) { return; }
-        const tab = await vAPI.tabs.update(tabId, { active: true });
-        if ( tab === null ) { return; }
-        if ( vAPI.windows instanceof Object === false ) { return; }
-        vAPI.windows.update(tab.windowId, { focused: true });
     }
 
     // https://forums.lanik.us/viewtopic.php?f=62&t=32826
@@ -493,41 +388,6 @@ vAPI.Tabs = class {
     onUpdated(/* tabId, changeInfo, tab */) {
     }
 };
-
-/******************************************************************************/
-/******************************************************************************/
-
-if ( webext.windows instanceof Object ) {
-    vAPI.windows = {
-        get: async function() {
-            let win;
-            try {
-                win = await webext.windows.get(...arguments);
-            }
-            catch (reason) {
-            }
-            return win instanceof Object ? win : null;
-        },
-        create: async function() {
-            let win;
-            try {
-                win = await webext.windows.create(...arguments);
-            }
-            catch (reason) {
-            }
-            return win instanceof Object ? win : null;
-        },
-        update: async function() {
-            let win;
-            try {
-                win = await webext.windows.update(...arguments);
-            }
-            catch (reason) {
-            }
-            return win instanceof Object ? win : null;
-        },
-    };
-}
 
 /******************************************************************************/
 

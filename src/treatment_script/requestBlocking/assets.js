@@ -37,32 +37,6 @@ const api = {};
 
 /******************************************************************************/
 
-const observers = [];
-
-api.addObserver = function(observer) {
-    if ( observers.indexOf(observer) === -1 ) {
-        observers.push(observer);
-    }
-};
-
-api.removeObserver = function(observer) {
-    let pos;
-    while ( (pos = observers.indexOf(observer)) !== -1 ) {
-        observers.splice(pos, 1);
-    }
-};
-
-const fireNotification = function(topic, details) {
-    let result;
-    for ( const observer of observers ) {
-        const r = observer(topic, details);
-        if ( r !== undefined ) { result = r; }
-    }
-    return result;
-};
-
-/******************************************************************************/
-
 api.fetch = function(url, options = {}) {
     return new Promise((resolve, reject) => {
     // Start of executor
@@ -412,12 +386,6 @@ const updateAssetSourceRegistry = function(json, silent) {
     }
     // Add/update existing entries. Notify of new asset sources.
     for ( const assetKey in newDict ) {
-        if ( oldDict[assetKey] === undefined && !silent ) {
-            fireNotification(
-                'builtin-asset-source-added',
-                { assetKey: assetKey, entry: newDict[assetKey] }
-            );
-        }
         registerAssetSource(assetKey, newDict[assetKey]);
     }
     saveAssetSourceRegistry();
@@ -442,7 +410,6 @@ api.unregisterAssetSource = async function(assetKey) {
 
 **/
 
-const assetCacheRegistryStartTime = Date.now();
 let assetCacheRegistryPromise;
 let assetCacheRegistry = {};
 
@@ -542,8 +509,6 @@ const assetCacheWrite = async function(assetKey, details) {
     });
 
     const result = { assetKey, content };
-    // https://github.com/uBlockOrigin/uBlock-issues/issues/248
-    fireNotification('after-asset-updated', result);
     return result;
 };
 
@@ -566,41 +531,8 @@ const assetCacheRemove = async function(pattern) {
         µBlock.cacheStorage.remove(removedContent);
         µBlock.cacheStorage.set({ assetCacheRegistry });
     }
-    for ( let i = 0; i < removedEntries.length; i++ ) {
-        fireNotification(
-            'after-asset-updated',
-            { assetKey: removedEntries[i] }
-        );
-    }
 };
 
-const assetCacheMarkAsDirty = async function(pattern, exclude) {
-    const cacheDict = await getAssetCacheRegistry();
-    let mustSave = false;
-    for ( const assetKey in cacheDict ) {
-        if ( pattern instanceof RegExp ) {
-            if ( pattern.test(assetKey) === false ) { continue; }
-        } else if ( typeof pattern === 'string' ) {
-            if ( assetKey !== pattern ) { continue; }
-        } else if ( Array.isArray(pattern) ) {
-            if ( pattern.indexOf(assetKey) === -1 ) { continue; }
-        }
-        if ( exclude instanceof RegExp ) {
-            if ( exclude.test(assetKey) ) { continue; }
-        } else if ( typeof exclude === 'string' ) {
-            if ( assetKey === exclude ) { continue; }
-        } else if ( Array.isArray(exclude) ) {
-            if ( exclude.indexOf(assetKey) !== -1 ) { continue; }
-        }
-        const cacheEntry = cacheDict[assetKey];
-        if ( !cacheEntry.writeTime ) { continue; }
-        cacheDict[assetKey].writeTime = 0;
-        mustSave = true;
-    }
-    if ( mustSave ) {
-        µBlock.cacheStorage.set({ assetCacheRegistry });
-    }
-};
 
 /******************************************************************************/
 
@@ -712,59 +644,6 @@ api.get = async function(assetKey, options = {}) {
 
 /******************************************************************************/
 
-const getRemote = async function(assetKey) {
-    const assetRegistry = await getAssetSourceRegistry();
-    const assetDetails = assetRegistry[assetKey] || {};
-
-    const reportBack = function(content, err) {
-        const details = { assetKey: assetKey, content: content };
-        if ( err ) {
-            details.error = assetDetails.lastError = err;
-        } else {
-            assetDetails.lastError = undefined;
-        }
-        return details;
-    };
-
-    let contentURLs = [];
-    if ( typeof assetDetails.contentURL === 'string' ) {
-        contentURLs = [ assetDetails.contentURL ];
-    } else if ( Array.isArray(assetDetails.contentURL) ) {
-        contentURLs = assetDetails.contentURL.slice(0);
-    }
-
-    for ( const contentURL of contentURLs ) {
-        if ( reIsExternalPath.test(contentURL) === false ) { continue; }
-
-        const result = assetDetails.content === 'filters'
-            ? await api.fetchFilterList(contentURL)
-            : await api.fetchText(contentURL);
-
-        // Failure
-        if ( stringIsNotEmpty(result.content) === false ) {
-            let error = result.statusText;
-            if ( result.statusCode === 0 ) {
-                error = 'network error';
-            }
-            registerAssetSource(
-                assetKey,
-                { error: { time: Date.now(), error } }
-            );
-            continue;
-        }
-
-        // Success
-        assetCacheWrite(
-            assetKey,
-            { content: result.content, url: contentURL }
-        );
-        registerAssetSource(assetKey, { error: undefined });
-        return reportBack(result.content);
-    }
-
-    return reportBack('', 'ENOTFOUND');
-};
-
 /******************************************************************************/
 
 api.put = async function(assetKey, content) {
@@ -808,127 +687,8 @@ api.metadata = async function() {
 
 /******************************************************************************/
 
-api.purge = assetCacheMarkAsDirty;
-
 api.remove = function(pattern) {
     return assetCacheRemove(pattern);
-};
-
-api.rmrf = function() {
-    return assetCacheRemove(/./);
-};
-
-/******************************************************************************/
-
-// Asset updater area.
-const updaterAssetDelayDefault = 120000;
-const updaterUpdated = [];
-const updaterFetched = new Set();
-
-let updaterStatus,
-    updaterTimer,
-    updaterAssetDelay = updaterAssetDelayDefault;
-
-const updateFirst = function() {
-    updaterStatus = 'updating';
-    updaterFetched.clear();
-    updaterUpdated.length = 0;
-    fireNotification('before-assets-updated');
-    updateNext();
-};
-
-const updateNext = async function() {
-    const [ assetDict, cacheDict ] = await Promise.all([
-        getAssetSourceRegistry(),
-        getAssetCacheRegistry(),
-    ]);
-
-    const now = Date.now();
-    let assetKeyToUpdate;
-    for ( const assetKey in assetDict ) {
-        const assetEntry = assetDict[assetKey];
-        if ( assetEntry.hasRemoteURL !== true ) { continue; }
-        if ( updaterFetched.has(assetKey) ) { continue; }
-        const cacheEntry = cacheDict[assetKey];
-        if (
-            cacheEntry &&
-            (cacheEntry.writeTime + assetEntry.updateAfter * 86400000) > now
-        ) {
-            continue;
-        }
-        if (
-            fireNotification(
-                'before-asset-updated',
-                { assetKey: assetKey,  type: assetEntry.content }
-            ) === true
-        ) {
-            assetKeyToUpdate = assetKey;
-            break;
-        }
-        // This will remove a cached asset when it's no longer in use.
-        if (
-            cacheEntry &&
-            cacheEntry.readTime < assetCacheRegistryStartTime
-        ) {
-            assetCacheRemove(assetKey);
-        }
-    }
-    if ( assetKeyToUpdate === undefined ) {
-        return updateDone();
-    }
-    updaterFetched.add(assetKeyToUpdate);
-
-    const result = await getRemote(assetKeyToUpdate);
-    if ( result.content !== '' ) {
-        updaterUpdated.push(result.assetKey);
-        if ( result.assetKey === 'assets.json' ) {
-            updateAssetSourceRegistry(result.content);
-        }
-    } else {
-        fireNotification('asset-update-failed', { assetKey: result.assetKey });
-    }
-
-    vAPI.setTimeout(updateNext, updaterAssetDelay);
-};
-
-const updateDone = function() {
-    const assetKeys = updaterUpdated.slice(0);
-    updaterFetched.clear();
-    updaterUpdated.length = 0;
-    updaterStatus = undefined;
-    updaterAssetDelay = updaterAssetDelayDefault;
-    fireNotification('after-assets-updated', { assetKeys: assetKeys });
-};
-
-api.updateStart = function(details) {
-    const oldUpdateDelay = updaterAssetDelay;
-    const newUpdateDelay = typeof details.delay === 'number' ?
-        details.delay :
-        updaterAssetDelayDefault;
-    updaterAssetDelay = Math.min(oldUpdateDelay, newUpdateDelay);
-    if ( updaterStatus !== undefined ) {
-        if ( newUpdateDelay < oldUpdateDelay ) {
-            clearTimeout(updaterTimer);
-            updaterTimer = vAPI.setTimeout(updateNext, updaterAssetDelay);
-        }
-        return;
-    }
-    updateFirst();
-};
-
-api.updateStop = function() {
-    if ( updaterTimer ) {
-        clearTimeout(updaterTimer);
-        updaterTimer = undefined;
-    }
-    if ( updaterStatus !== undefined ) {
-        updateDone();
-    }
-};
-
-api.isUpdating = function() {
-    return updaterStatus === 'updating' &&
-           updaterAssetDelay <= µBlock.hiddenSettings.manualUpdateAssetFetchPeriod;
 };
 
 /******************************************************************************/
