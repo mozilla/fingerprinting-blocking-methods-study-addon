@@ -13,8 +13,8 @@ Study Addon for experiment to test methods of fingerprinting blocking
 ### Treatment - Script
 
 * User should not already be enrolled in v2 fp study (is that something I need to write code for)?
-* User should not be allowed to enroll if they have flipped fp pref. Test with: `npx web-ext run -s dist/extension-treatment_function-0.1.0 -c web-ext-config-testFpOn.js` - I'm not sure about this - but this is safer option.
-* User should be unenrolled if they flip fp pref. Start with `npx web-ext run -s dist/extension-treatment_function-0.1.0` user is enrolled in study. Manually flip pref either in preferences (Privacy and Security) or about:config. User should be unenrolled from study. Should be unenrolled, as this will lead to domain level FP blocking kicking in and will pollute results.
+* User should not be allowed to enroll if they have flipped fp pref. Test with: `npx web-ext run -s dist/extension-treatmentScript-0.1.0 -c web-ext-config-testFpOn.js` - I'm not sure about this - but this is safer option.
+* User should be unenrolled if they flip fp pref. Start with `npx web-ext run -s dist/extension-treatmentScript-0.1.0` user is enrolled in study. Manually flip pref either in preferences (Privacy and Security) or about:config. User should be unenrolled from study. Should be unenrolled, as this will lead to domain level FP blocking kicking in and will pollute results.
 * Test updateAfter set short, and make sure everything still runs. User's could change clock and we want things to continue running. This will require installing, then keepign profile for at least the time chanage.
 * Test that after removing the study addon all cache, storage, etc is cleaned up.
 
@@ -29,7 +29,8 @@ Install and run one of the built variants:
 
 ```bash
 npx web-ext run -s dist/extension-control-0.1.0
-npx web-ext run -s dist/extension-treatment_script-0.1.0
+npx web-ext run -s dist/extension-treatmentScript-0.1.0
+npx web-ext run -s dist/extension-treatmentDomain-0.1.0
 ```
 
 For the add-on to work, it must be used in a version of Firefox with the

@@ -150,7 +150,7 @@ async function main() {
   await rimraf(DEST_BASE_DIR);
   await fsp.mkdir(DEST_BASE_DIR);
 
-  for (const branch of ["control", "treatment_script"]) {
+  for (const branch of ["control", "treatmentScript"]) {
     await buildBranch({ branch });
   }
 }
