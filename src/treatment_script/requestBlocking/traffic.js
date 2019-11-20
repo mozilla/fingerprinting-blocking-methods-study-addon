@@ -59,6 +59,13 @@ const onBeforeRequest = function(details) {
         pageStore = µb.pageStoreFromTabId(tabId);
     }
 
+    if ( pageStore === null ) {
+        // It can still be null, tab is probably closed (at least that's when i can reproduce this)
+        // Not sure why I get in this position, but we can just give up at this point.
+        // Testing for status of tabId is async and don't want to do that.
+        return;
+    }
+
     // console.log('This is where the magic happens');
     const result = pageStore.filterRequest(fctxt);
 
