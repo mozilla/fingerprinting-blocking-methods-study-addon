@@ -79,7 +79,6 @@ const µBlock = (( ) => { // jshint ignore:line
             requestLogMaxEntries: 1000,
             showIconBadge: false,
             tooltipsDisabled: false,
-            webrtcIPAddressHidden: false,
         },
 
         hiddenSettingsDefault: hiddenSettingsDefault,
@@ -107,7 +106,6 @@ const µBlock = (( ) => { // jshint ignore:line
         })(),
 
         // Features detection.
-        privacySettingsSupported: vAPI.browserSettings instanceof Object,
         cloudStorageSupported: false,
         canFilterResponseData: false, //typeof browser.webRequest.filterResponseData === 'function',
         canInjectScriptletsNow: vAPI.webextFlavor.soup.has('chromium'),

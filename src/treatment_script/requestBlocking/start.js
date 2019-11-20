@@ -58,16 +58,7 @@ const onNetWhitelistReady = function(netWhitelistRaw) {
 
 const onUserSettingsReady = function(fetched) {
     const userSettings = µb.userSettings;
-
     fromFetch(userSettings, fetched);
-
-    if ( µb.privacySettingsSupported ) {
-        vAPI.browserSettings.set({
-            'hyperlinkAuditing': !userSettings.hyperlinkAuditingDisabled,
-            'prefetching': !userSettings.prefetchingDisabled,
-            'webrtcIPAddress': !userSettings.webrtcIPAddressHidden
-        });
-    }
 };
 
 /******************************************************************************/
