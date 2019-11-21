@@ -9,6 +9,20 @@
         "async": true,
         "description": "get value of privacy.trackingprotection.fingerprinting.enabled",
         "parameters": []
+      },
+      {
+        "name": "setFpProtectionEnabledTrue",
+        "type": "function",
+        "async": true,
+        "description": "set value of privacy.trackingprotection.fingerprinting.enabled to true",
+        "parameters": []
+      },
+      {
+        "name": "setFpProtectionEnabledFalse",
+        "type": "function",
+        "async": true,
+        "description": "set value of privacy.trackingprotection.fingerprinting.enabled to false",
+        "parameters": []
       }
     ],
     "events": [

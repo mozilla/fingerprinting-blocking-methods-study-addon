@@ -22,6 +22,16 @@ this.fpPrefs = class extends ExtensionAPI {
           return Services.prefs.getBoolPref(PREF_FP_ENABLED);
         },
 
+        async setFpProtectionEnabledTrue() {
+          console.log('Setting `privacy.trackingprotection.fingerprinting.enabled` to true');
+          return Services.prefs.setBoolPref(PREF_FP_ENABLED, true);
+        },
+
+        async setFpProtectionEnabledFalse() {
+          console.log('Setting `privacy.trackingprotection.fingerprinting.enabled` to false');
+          return Services.prefs.setBoolPref(PREF_FP_ENABLED, false);
+        },
+
         onFpPrefChanged: new EventManager({
           context,
           name: "onFpPrefChanged",

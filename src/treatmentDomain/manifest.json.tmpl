@@ -1,0 +1,37 @@
+{
+  "manifest_version": 2,
+  "name": "${package.name}",
+  "description": "${package.description}",
+  "hidden": true,
+  "incognito": "not_allowed",
+  "version": "${package.version}",
+
+  "applications": {
+    "gecko": {
+      "id": "${package.name}-${branch}@mozilla.org"
+    }
+  },
+
+  "experiment_apis": {
+    "fpPrefs": {
+      "schema": "./common/privileged/fpPrefs/schema.json",
+      "parent": {
+        "scopes": ["addon_parent"],
+        "script": "./common/privileged/fpPrefs/api.js",
+        "paths": [["fpPrefs"]]
+      }
+    }
+  },
+
+  "permissions": [
+    "normandyAddonStudy",
+    "storage"
+  ],
+
+  "background": {
+    "scripts": [
+      "./studyController.js"
+    ]
+  }
+
+}
