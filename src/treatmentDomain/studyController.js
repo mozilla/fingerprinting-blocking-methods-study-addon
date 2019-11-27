@@ -28,7 +28,7 @@ let StudyController = {
   
   async init() {
     const continueInit = await this.studySetup();
-    console.log(`Continuing: ${continueInit}`);
+    // console.log(`Continuing: ${continueInit}`);
     
     if ( continueInit === true ) {  
       // Turn on domain protection

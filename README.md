@@ -50,13 +50,13 @@ const { AddonStudies } = ChromeUtils.import(
   "resource://normandy/lib/AddonStudies.jsm",
 );
 await AddonStudies.add({
-  recipeId: 1,
+  recipeId: 2,
   slug: "FPBlock",
   userFacingName: "FPBlock",
   userFacingDescription: "Study Addon for FPBlock experiment",
   branch: "control",
   active: true,
-  addonId: "fpblock-control@mozilla.org",
+  addonId: "FPBlock-treatmentDomain@mozilla.org",
   addonVersion: "0.1.0",
   extensionApiId: 1,
   extensionHash: "badhash",
