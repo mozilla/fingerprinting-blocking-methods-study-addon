@@ -40,6 +40,7 @@ All branches should not be functioning / interacting with private browsing mode.
 
 #### Testing script blocking 
 
+
 How to observe blocking:
 * In the Web Console (Ctl-Shift-I) -> Network - there should be no entry for the blocked script
 * In the Browser Console (Ctl-Shift-J), check Show Content Messages - there should be an entry of the form `FPScript Blocking Experiment. Blocking: <script url that was blocked> pagestore.js:309:21`
@@ -49,8 +50,12 @@ In the folder FPList, the csv file `disconnect_scripts_with_top_level.csv` conta
 * The internet moves on from when the crawls that power this study were done and so the sites may no longer exist, or the sites may have updated the content they load.
 * The crawls that power this study visit a sample of the web that includes explicit content, which is not appropriate to request for a test plan and is not necessary to test coverage.
 
-As a result, we include a curated set of pages below to test 20 rules from the script list. 
+As a result, we include a curated set of pages below to test a selection of rules from the script list.  The block list rules can be seen here: https://github.com/mozilla/fingerprinting-blocking-methods-study-addon/blob/v0.2.0/src/treatmentScript/assets/script_list.txt.
 
-A successful
+Because of the possibility that a website has changed since data gathering a test can have three states:
+* FAIL (1) - Target resource appears in Web Console -> Network - and is noted in Browser Console -> Content Messages as blocked
+* FAIL (2) - Target resource appears in Web Console -> Network - and no blocking noted in Browser Console -> Content Messages
+* PASS - Target resource does not appear in Web Console -> Network - and blocking is noted in Browser Console -> Content Messages
+* NO TEST - Target resource does not appear in Web Console -> Network - and no blocking noted in Browser Console -> Content Messages
 
-If, when testing, no message is seen 
+Test cases
