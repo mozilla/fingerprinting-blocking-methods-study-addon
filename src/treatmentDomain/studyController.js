@@ -33,17 +33,22 @@ let StudyController = {
     if ( continueInit === true ) {  
       // Turn on domain protection
       browser.fpPrefs.setFpProtectionEnabledTrue();
-      
+
+      // Remove user from study if user change fpPref
+      let onFPPrefChanged = () => {
+        browser.normandyAddonStudy.endStudy(this.USER_TURNED_FP_OFF)
+      }
+      browser.fpPrefs.onFpPrefChanged.addListener(onFPPrefChanged);
+
       // On study termination turn FpProtection back to off 
       // Note that code would not get this far if user had already set to True.
       browser.normandyAddonStudy.onUnenroll.addListener(async () => {
+        // First remove the listener so we don't get two unenroll events
+        browser.fpPrefs.onFpPrefChanged.removeListener(onFPPrefChanged);
+        // Then reset the browser pref
         await browser.fpPrefs.setFpProtectionEnabledFalse();
       });
 
-      // Remove user from study if user change fpPref
-      browser.fpPrefs.onFpPrefChanged.addListener(() => {
-        browser.normandyAddonStudy.endStudy(this.USER_TURNED_FP_OFF)
-      });
     }
   }
 };
