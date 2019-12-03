@@ -11,6 +11,13 @@
         "parameters": []
       },
       {
+        "name": "isETPStandard",
+        "type": "function",
+        "async": true,
+        "description": "returns true if browser.contentblocking.category is standard",
+        "parameters": []
+      },
+      {
         "name": "setFpProtectionEnabledTrue",
         "type": "function",
         "async": true,
@@ -18,10 +25,17 @@
         "parameters": []
       },
       {
-        "name": "setFpProtectionEnabledFalse",
+        "name": "setETPStandard",
         "type": "function",
         "async": true,
-        "description": "set value of privacy.trackingprotection.fingerprinting.enabled to false",
+        "description": "sets value of browser.contentblocking.category to standard",
+        "parameters": []
+      },
+      {
+        "name": "isETPSettingsDefault",
+        "type": "function",
+        "async": true,
+        "description": "Returns true if all values of ETP settings that are user adjustable in about:preferences are still at their default value.",
         "parameters": []
       }
     ],

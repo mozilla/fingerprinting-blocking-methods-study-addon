@@ -12,13 +12,19 @@ let StudyController = {
   },
 
   async studySetup() {
+    console.log("First run setup for treatmentDomain.");
+    
     const result = await browser.storage.local.get("firstRunComplete");
     if ( result.firstRunComplete === true ) {
       return true;
     }
-    console.log("First run setup for treatmentDomain.");
-    const fpPref = await this.getFPPref()
-    if ( fpPref === true ) {
+    
+    // User may only enroll if they are in "standard" ETP mode
+    // Standard mode has FPPref off, but we double check that it's off.
+    const fpPref = await this.getFPPref();
+    const isStandard = await browser.fpPrefs.isETPStandard();
+    
+    if ( ( fpPref === true ) || ( isStandard !== true ) ) {
         browser.normandyAddonStudy.endStudy(this.USER_HAS_FP_ON);
         return false;
     }
@@ -31,7 +37,7 @@ let StudyController = {
     // console.log(`Continuing: ${continueInit}`);
     
     if ( continueInit === true ) {  
-      // Turn on domain protection
+      // Turn on Fingerprinting protection
       browser.fpPrefs.setFpProtectionEnabledTrue();
 
       // Remove user from study if user change fpPref
@@ -40,13 +46,19 @@ let StudyController = {
       }
       browser.fpPrefs.onFpPrefChanged.addListener(onFPPrefChanged);
 
-      // On study termination turn FpProtection back to off 
-      // Note that code would not get this far if user had already set to True.
+      // On study termination turn FpProtection back to off - by setting ETP back to Standard
+      // BUT, only do this if user has not altered other settings. If user has altered other settings then
+      // assume that they are comfortable in Custom mode and leave them there. We do not want to risk downgrading
+      // user initiated protections.
       browser.normandyAddonStudy.onUnenroll.addListener(async () => {
         // First remove the listener so we don't get two unenroll events
         browser.fpPrefs.onFpPrefChanged.removeListener(onFPPrefChanged);
-        // Then reset the browser pref
-        await browser.fpPrefs.setFpProtectionEnabledFalse();
+
+        const isDefault = await browser.fpPrefs.isETPSettingsDefault();
+        if ( isDefault === true ) {
+          // Then reset the browser to Standard
+          await browser.fpPrefs.setETPStandard();
+        }
       });
 
     }

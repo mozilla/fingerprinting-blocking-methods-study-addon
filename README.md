@@ -45,7 +45,7 @@ await AddonStudies.add({
   branch: "control",
   active: true,
   addonId: "FPBlock-treatmentDomain@mozilla.org",
-  addonVersion: "0.1.0",
+  addonVersion: "0.4.0",
   extensionApiId: 1,
   extensionHash: "badhash",
   hashAlgorithm: "sha256",
@@ -53,5 +53,3 @@ await AddonStudies.add({
   studyEndDate: null,
 });
 ```
-
-Note that if the add-on is not present when the browser starts up, the study will automatically end.
