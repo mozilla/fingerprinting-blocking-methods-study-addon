@@ -44,7 +44,7 @@ await AddonStudies.add({
   userFacingDescription: "Study Addon for FPBlock experiment",
   branch: "control",
   active: true,
-  addonId: "FPBlock-treatmentDomain@mozilla.org",
+  addonId: "FPBlock-control@mozilla.org",
   addonVersion: "0.4.0",
   extensionApiId: 1,
   extensionHash: "badhash",

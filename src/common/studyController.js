@@ -1,7 +1,6 @@
 let StudyController = {
 
-  USER_HAS_FP_ON: "0: User has fingerprinting protections enabled.",
-  USER_TURNED_FP_ON: "1: User has turned fingerprinting protections on.",
+  UNENROLLED: "FPBlock Unenroll",
   
   async init() {
     let fpPrefEnabled = await browser.fpPrefs.isFpProtectionEnabled();
@@ -9,12 +8,12 @@ let StudyController = {
 
     if ( fpPrefEnabled ) {
       // Immediatly remove from study group.
-      browser.normandyAddonStudy.endStudy(this.USER_HAS_FP_ON)
+      browser.normandyAddonStudy.endStudy(this.UNENROLLED)
     
     } else {
       // Remove from study if user change fpPref
       browser.fpPrefs.onFpPrefChanged.addListener(() => {
-        browser.normandyAddonStudy.endStudy(this.USER_TURNED_FP_ON)
+        browser.normandyAddonStudy.endStudy(this.UNENROLLED)
       })
     }
   },
