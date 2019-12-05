@@ -16,17 +16,17 @@ Purpose of branches:
 
 ### Control
 
-* User should not be allowed to enroll in study if FP-PREF is already on. (End study reason: "0: User has fingerprinting protections enabled.")
-* User should be unenrolled from study if they manually flip FP-PREF on.  (End study reason: "1: User has turned fingerprinting protections on.")
+* User should not be allowed to enroll in study if FP-PREF is already on. (End study reason: "FPBlock Unenroll")
+* User should be unenrolled from study if they manually flip FP-PREF on.  (End study reason: "FPBlock Unenroll")
 * If user does enroll, nothing happens.
 * Private browsing mode test: fingerprinters are allowed in standard browsing, fingerprinters are blocked in private browsing mode by virtue of being listed as tracking content
 
 
 ### Treatment Domain
 
-* User should not be allowed to enroll in study if FP-PREF is already on. (End study reason: "0: User has fingerprinting protections enabled.")
-* User should not be allowed to enroll in study if Privacy and Security in about:preferences is Strict or Custom. (End study reason: "0: User has fingerprinting protections enabled.")
-* User should be unenrolled from study if they manually flip FP-PREF off (End study reason: "2: User has turned fingerprinting protections off.")
+* User should not be allowed to enroll in study if FP-PREF is already on. (End study reason: "FPBlock Unenroll")
+* User should not be allowed to enroll in study if Privacy and Security in about:preferences is Strict or Custom. (End study reason: "FPBlock Unenroll")
+* User should be unenrolled from study if they manually flip FP-PREF off (End study reason: "FPBlock Unenroll")
 * If user does enroll, FP-PREF is flipped on - Privacy & Security in about:preferences setting becomes "Custom"
 * At end of study, FP-PREF should be restored to off - Privacy & Security in about:preferences setting returns "Standard" (exception see next test case)
 * At end of study, if user has changed their Privacy & Security preferences (e.g. in custom menu, change cookies option) - then FP-PREF is left on and Privacy & Security settings remain as they are (if they're Strict they stay Strict, if they're Custom, they stay Custom). Rationale: if these settings have been changed we can assume that user has seen the state of Privacy & Security and seen that Fingerprinting Protections are on. If we were to revert to Standard in this case, then we would be reducing the level of protection the user is expecting.
@@ -34,8 +34,8 @@ Purpose of branches:
 
 ### Treatment - Script
 
-* User should not be allowed to enroll in study if FP-PREF is already on. (End study reason: "0: User has fingerprinting protections enabled.")
-* User should be unenrolled from study if they manually flip FP-PREF on.  (End study reason: "1: User has turned fingerprinting protections on.")
+* User should not be allowed to enroll in study if FP-PREF is already on. (End study reason: "FPBlock Unenroll")
+* User should be unenrolled from study if they manually flip FP-PREF on.  (End study reason: "FPBlock Unenroll")
 * If user does enroll, a specific list of scripts should be blocked: see below.
 * After unenrolling from study addon blocking shouldn't continue.
 * Private browsing mode test: fingerprinters are allowed in standard browsing, fingerprinters are blocked in private browsing mode by virtue of being listed as tracking content
