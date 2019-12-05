@@ -2,6 +2,11 @@
 
 Study Addon for experiment to test methods of fingerprinting blocking.  For more information on the study see [bugzilla](https://bugzilla.mozilla.org/show_bug.cgi?id=1595604).
 
+The study has three branches:
+* control - maintaining current default fingerprinting protections
+* treatmentDomain - flips fingerprinting pref to default on ETP domain-based fingerprinting protection
+* treatmentScript - blocks specific fingerprinting scripts detected on the ETP fingerprinting domains. This branch uses code from the excellent [uBlock Origin](https://github.com/gorhill/uBlock) to perform the static network filtering. uBlock Origin attribution and license notes [here](https://github.com/mozilla/fingerprinting-blocking-methods-study-addon/blob/master/src/treatmentScript/requestBlocking/LICENSE.md) including information of forking and modifications.
+
 ## Testing
 
 See [TESTPLAN.md](TESTPLAN.md)
