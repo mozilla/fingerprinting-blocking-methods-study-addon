@@ -40,7 +40,8 @@ let StudyController = {
       browser.fpPrefs.setFpProtectionEnabledTrue();
 
       // Remove user from study if user change fpPref
-      let onFPPrefChanged = () => {
+      let onFPPrefChanged = async () => {
+        await browser.storage.local.set({ userChangedFPPref: true });
         browser.normandyAddonStudy.endStudy(this.UNENROLLED)
       }
       browser.fpPrefs.onFpPrefChanged.addListener(onFPPrefChanged);
@@ -54,7 +55,8 @@ let StudyController = {
         browser.fpPrefs.onFpPrefChanged.removeListener(onFPPrefChanged);
 
         const isDefault = await browser.fpPrefs.isETPSettingsDefault();
-        if ( isDefault === true ) {
+        const result = await browser.storage.local.get("userChangedFPPref");
+        if ( ( isDefault === true ) && ( result.userChangedFPPref !== true )) {
           // Then reset the browser to Standard
           await browser.fpPrefs.setETPStandard();
         }
