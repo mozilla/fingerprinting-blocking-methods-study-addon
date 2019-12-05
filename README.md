@@ -1,6 +1,6 @@
 **fingerprinting-blocking-methods-study-addon**
 
-Study Addon for experiment to test methods of fingerprinting blocking
+Study Addon for experiment to test methods of fingerprinting blocking.  For more information on the study see [bugzilla](https://bugzilla.mozilla.org/show_bug.cgi?id=1595604).
 
 ## Testing
 

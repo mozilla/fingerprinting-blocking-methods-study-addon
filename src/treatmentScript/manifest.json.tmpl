@@ -5,10 +5,12 @@
   "hidden": true,
   "incognito": "not_allowed",
   "version": "${package.version}",
+  "homepage_url": "${package.homepage}",
 
   "applications": {
     "gecko": {
-      "id": "${package.name}-${branch}@mozilla.org"
+      "id": "${package.name}-${branch}@mozilla.org",
+          "strict_min_version": "69.0"
     }
   },
 
