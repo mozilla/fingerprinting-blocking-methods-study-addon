@@ -7,7 +7,7 @@ const PREF_CONTENT_BLOCKING_CATEGORY = "browser.contentblocking.category";
 const { ExtensionCommon } = ChromeUtils.import(
   "resource://gre/modules/ExtensionCommon.jsm",
 );
-const { EventManager, EventEmitter } = ExtensionCommon;
+const { EventManager } = ExtensionCommon;
 const { Services } = ChromeUtils.import(
   "resource://gre/modules/Services.jsm"
 );
