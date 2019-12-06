@@ -39,22 +39,11 @@ this.fpPrefs = class extends ExtensionAPI {
 
         isETPSettingsDefault() {
           // Return true if all ETP settings are default (except fingerprinting which we are flipping.)
-          
-          const crypto = Services.prefs.getBoolPref("privacy.trackingprotection.cryptomining.enabled");
-          const cryptoIsDefault = crypto === true;
-          
-          const pbmode = Services.prefs.getBoolPref("privacy.trackingprotection.pbmode.enabled");
-          const pbmodeIsDefault = pbmode === true;
-          
-          const tp = Services.prefs.getBoolPref("privacy.trackingprotection.enabled"); 
-          const tpIsDefault = tp === false;
-          
-          const social = Services.prefs.getBoolPref("privacy.trackingprotection.socialtracking.enabled");
-          const socialIsDefault = social === false;
-          
-          const cookie = Services.prefs.getIntPref("network.cookie.cookieBehavior");
-          const cookieIsDefault = cookie === 4;
-          
+          const cryptoIsDefault = !Services.prefs.prefHasUserValue("privacy.trackingprotection.cryptomining.enabled");
+          const pbmodeIsDefault = !Services.prefs.prefHasUserValue("privacy.trackingprotection.pbmode.enabled");
+          const tpIsDefault = !Services.prefs.prefHasUserValue("privacy.trackingprotection.enabled"); 
+          const socialIsDefault = !Services.prefs.prefHasUserValue("privacy.trackingprotection.socialtracking.enabled");
+          const cookieIsDefault = !Services.prefs.prefHasUserValue("network.cookie.cookieBehavior");
           return cryptoIsDefault && pbmodeIsDefault && tpIsDefault && socialIsDefault && cookieIsDefault; 
         },
 
