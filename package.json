@@ -1,6 +1,6 @@
 {
   "name": "FPBlock",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Study Addon for FPBlock experiment",
   "homepage": "https://github.com/mozilla/fingerprinting-blocking-methods-study-addon",
   "private": true,
