@@ -19,34 +19,34 @@ this.fpPrefs = class extends ExtensionAPI {
     return {
       fpPrefs: {
         
-        async isFpProtectionEnabled() {
+        isFpProtectionEnabled() {
           return Services.prefs.getBoolPref(PREF_FP_ENABLED);
         },
 
-        async isETPStandard() {
+        isETPStandard() {
           return Services.prefs.getCharPref(PREF_CONTENT_BLOCKING_CATEGORY) == "standard";
         },
 
-        async setFpProtectionEnabledTrue() {
+        setFpProtectionEnabledTrue() {
           console.log('Setting `privacy.trackingprotection.fingerprinting.enabled` to true');
           return Services.prefs.setBoolPref(PREF_FP_ENABLED, true);
         },
 
-        async setETPStandard() {
+        setETPStandard() {
           console.log('Setting `browser.contentblocking.category` to standard');
           return Services.prefs.setCharPref(PREF_CONTENT_BLOCKING_CATEGORY, "standard");
         },
 
-        async isETPSettingsDefault() {
+        isETPSettingsDefault() {
           // Return true if all ETP settings are default (except fingerprinting which we are flipping.)
           
-          const crypto = await Services.prefs.getBoolPref("privacy.trackingprotection.cryptomining.enabled");
+          const crypto = Services.prefs.getBoolPref("privacy.trackingprotection.cryptomining.enabled");
           const cryptoIsDefault = crypto === true;
           
-          const pbmode = await Services.prefs.getBoolPref("privacy.trackingprotection.pbmode.enabled");
+          const pbmode = Services.prefs.getBoolPref("privacy.trackingprotection.pbmode.enabled");
           const pbmodeIsDefault = pbmode === true;
           
-          const tp = await Services.prefs.getBoolPref("privacy.trackingprotection.enabled"); 
+          const tp = Services.prefs.getBoolPref("privacy.trackingprotection.enabled"); 
           const tpIsDefault = tp === false;
           
           const social = Services.prefs.getBoolPref("privacy.trackingprotection.socialtracking.enabled");
