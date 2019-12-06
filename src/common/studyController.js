@@ -2,8 +2,8 @@ let StudyController = {
 
   UNENROLLED: "FPBlock Unenroll",
   
-  init() {
-    let fpPrefEnabled = browser.fpPrefs.isFpProtectionEnabled();
+  async init() {
+    let fpPrefEnabled = await browser.fpPrefs.isFpProtectionEnabled();
     console.log(`Fingerprinting enabled pref is ${fpPrefEnabled}`);
 
     if ( fpPrefEnabled ) {

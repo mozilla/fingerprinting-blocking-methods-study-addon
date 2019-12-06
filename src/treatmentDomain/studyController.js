@@ -3,12 +3,6 @@
 let StudyController = {
 
   UNENROLLED: "FPBlock Unenroll",
-  
-  getFPPref() {
-    let fpPrefEnabled = browser.fpPrefs.isFpProtectionEnabled();
-    console.log(`Fingerprinting enabled pref is ${fpPrefEnabled}`);
-    return fpPrefEnabled;
-  },
 
   async studySetup() {
     console.log("First run setup for treatmentDomain.");
@@ -20,8 +14,9 @@ let StudyController = {
     
     // User may only enroll if they are in "standard" ETP mode
     // Standard mode has FPPref off, but we double check that it's off.
-    const fpPref = this.getFPPref();
-    const isStandard = browser.fpPrefs.isETPStandard();
+    const fpPref = await browser.fpPrefs.isFpProtectionEnabled();
+    const isStandard = await browser.fpPrefs.isETPStandard();
+    console.log(`Fingerprinting enabled pref is ${fpPref}`);
     
     if ( ( fpPref === true ) || ( isStandard !== true ) ) {
         browser.normandyAddonStudy.endStudy(this.UNENROLLED);
@@ -54,7 +49,7 @@ let StudyController = {
         // First remove the listener so we don't get two unenroll events
         browser.fpPrefs.onFpPrefChanged.removeListener(onFPPrefChanged);
 
-        const isDefault = browser.fpPrefs.isETPSettingsDefault();
+        const isDefault = await browser.fpPrefs.isETPSettingsDefault();
         const result = await browser.storage.local.get("userChangedFPPref");
         if ( ( isDefault === true ) && ( result.userChangedFPPref !== true )) {
           // Then reset the browser to Standard

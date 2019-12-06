@@ -50,7 +50,7 @@ await AddonStudies.add({
   branch: "treatmentDomain",
   active: true,
   addonId: "FPBlock-treatmentDomain@mozilla.org",
-  addonVersion: "0.4.0",
+  addonVersion: "0.6.0",
   extensionApiId: 1,
   extensionHash: "badhash",
   hashAlgorithm: "sha256",

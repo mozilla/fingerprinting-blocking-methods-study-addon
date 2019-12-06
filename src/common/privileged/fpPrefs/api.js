@@ -24,7 +24,7 @@ this.fpPrefs = class extends ExtensionAPI {
         },
 
         isETPStandard() {
-          return Services.prefs.getCharPref(PREF_CONTENT_BLOCKING_CATEGORY) == "standard";
+          return Services.prefs.getCharPref(PREF_CONTENT_BLOCKING_CATEGORY) === "standard";
         },
 
         setFpProtectionEnabledTrue() {
